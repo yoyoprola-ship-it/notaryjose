@@ -255,6 +255,20 @@ function Hero({ t }: { t: CopyBlock }) {
   return (
     <section className="px-6 pt-16 pb-24 sm:pt-24">
       <div className="max-w-3xl mx-auto text-center">
+        {/* Foto — anillo dorado sugerente del sello notarial. Usamos
+            <img> nativo (no next/image) para que sea 100% self-hosted
+            del bundle y no dependa de un loader server-side; a 66KB
+            no vale la optimización. */}
+        <div className="mx-auto mb-8 w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden ring-4 ring-amber-700/40 ring-offset-4 ring-offset-stone-50 shadow-lg">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/jose.jpg"
+            alt="Jose E. Garcia — Notary Public"
+            className="w-full h-full object-cover"
+            style={{ objectPosition: 'top center' }}
+          />
+        </div>
+
         <p className="text-xs font-bold uppercase tracking-[0.25em] text-amber-700 mb-4">
           {t.hero.eyebrow}
         </p>
