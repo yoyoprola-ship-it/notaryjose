@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import BookingModal, { type BookingCopy } from './BookingModal';
 import { formatDateShort, formatHour, formatSlotRange } from '@/app/lib/timeSlots';
 
@@ -132,7 +132,6 @@ export default function AppointmentSection({ lang }: Props) {
   const [days, setDays] = useState<DayEntry[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<{
     iso: string;
     label: string;
@@ -146,7 +145,6 @@ export default function AppointmentSection({ lang }: Props) {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Load failed');
       setDays(data.days as DayEntry[]);
-      if (data.days?.[0] && !selectedDate) setSelectedDate(data.days[0].date);
     } catch (err) {
       console.error('[appointments] load failed:', err);
       setError(t.errorLoad);
@@ -160,17 +158,12 @@ export default function AppointmentSection({ lang }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const currentDay = useMemo(
-    () => days?.find((d) => d.date === selectedDate) || null,
-    [days, selectedDate]
-  );
-
   return (
     <section
       id="book"
       className="px-6 py-16 bg-stone-50 border-y border-stone-200"
     >
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <div className="mb-8">
           <p className="text-xs font-bold uppercase tracking-[0.25em] text-amber-700 mb-2">
             —
@@ -196,93 +189,73 @@ export default function AppointmentSection({ lang }: Props) {
 
         {days && !loading && (
           <>
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-              {t.pickDay}
-            </p>
-            <div className="flex gap-2 overflow-x-auto pb-2 mb-6 -mx-6 px-6 sm:mx-0 sm:px-0">
-              {days.map((d) => {
-                const active = d.date === selectedDate;
-                const anyOpen = d.hours.some((h) => h.available);
-                return (
-                  <button
-                    key={d.date}
-                    onClick={() => setSelectedDate(d.date)}
-                    className={`shrink-0 min-w-[92px] rounded border px-3 py-3 text-center transition-all ${
-                      active
-                        ? 'border-amber-700 bg-amber-50 shadow-sm'
-                        : 'border-stone-200 bg-white hover:border-amber-300'
-                    } ${!anyOpen ? 'opacity-40' : ''}`}
-                  >
-                    <p
-                      className={`text-[10px] font-bold uppercase tracking-wider ${
-                        active ? 'text-amber-800' : 'text-slate-500'
-                      }`}
-                    >
-                      {formatDateShort(d.date).split(',')[0]}
-                    </p>
-                    <p className="text-lg font-black text-slate-900 mt-1">
-                      {formatDateShort(d.date).split(', ')[1] ||
-                        formatDateShort(d.date)}
-                    </p>
-                  </button>
-                );
-              })}
+            {/* Legend */}
+            <div className="flex gap-5 mb-5">
+              {[
+                { color: 'bg-green-50 border-green-300', label: t.labels.available },
+                { color: 'bg-red-50 border-red-200', label: t.labels.booked },
+                { color: 'bg-stone-100 border-stone-200', label: t.labels.closed },
+              ].map(({ color, label }) => (
+                <span key={label} className="flex items-center gap-1.5 text-xs text-slate-500">
+                  <span className={`w-3 h-3 rounded-sm border inline-block ${color}`} />
+                  {label}
+                </span>
+              ))}
             </div>
 
-            {currentDay && (
-              <>
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-                  {t.pickHour}
-                </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {currentDay.hours.map((h) => {
-                    const label = formatHour(h.hour);
-                    const range = formatSlotRange(h.hour);
-                    const isBooked = !h.available && h.reason === 'booked';
-                    const isClosed = !h.available && h.reason !== 'booked';
-                    const btnCls = h.available
-                      ? 'border-green-300 bg-green-50 hover:border-green-500 hover:shadow-sm cursor-pointer'
-                      : isBooked
-                        ? 'border-red-200 bg-red-50 opacity-75 cursor-not-allowed'
-                        : 'border-stone-200 bg-stone-100 opacity-50 cursor-not-allowed';
-                    const hourCls = h.available
-                      ? 'text-slate-900'
-                      : isBooked
-                        ? 'text-red-700'
-                        : 'text-slate-400';
-                    const statusCls = h.available
-                      ? 'text-green-700'
-                      : isBooked
-                        ? 'text-red-600'
-                        : 'text-slate-400';
-                    return (
-                      <button
-                        key={h.iso}
-                        disabled={!h.available}
-                        onClick={() =>
-                          setSelectedSlot({
-                            iso: h.iso,
-                            label: `${formatDateShort(currentDay.date)} · ${range}`,
-                          })
-                        }
-                        className={`rounded border px-3 py-3 text-left transition-all ${btnCls}`}
-                      >
-                        <p className={`text-lg font-black tabular-nums ${hourCls}`}>
-                          {label}
+            {/* Weekly grid — horizontal scroll on small screens */}
+            <div className="overflow-x-auto -mx-6 sm:mx-0">
+              <div className="min-w-[560px] px-6 sm:px-0">
+                <div className="grid grid-cols-7 gap-2">
+                  {days.map((day) => (
+                    <div key={day.date} className="flex flex-col">
+                      {/* Day header */}
+                      <div className="text-center pb-2 mb-2 border-b border-stone-200">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 leading-tight">
+                          {formatDateShort(day.date).split(',')[0]}
                         </p>
-                        <p className={`text-[10px] font-bold uppercase tracking-wider mt-0.5 ${statusCls}`}>
-                          {h.available
-                            ? t.labels.available
+                        <p className="text-sm font-black text-slate-900 leading-tight">
+                          {formatDateShort(day.date).split(', ')[1] ??
+                            formatDateShort(day.date)}
+                        </p>
+                      </div>
+
+                      {/* Hour slots */}
+                      <div className="flex flex-col gap-1">
+                        {day.hours.map((h) => {
+                          const isBooked = !h.available && h.reason === 'booked';
+                          const btnCls = h.available
+                            ? 'border-green-300 bg-green-50 hover:border-green-500 hover:shadow-sm cursor-pointer'
                             : isBooked
-                              ? t.labels.booked
-                              : t.labels.closed}
-                        </p>
-                      </button>
-                    );
-                  })}
+                              ? 'border-red-200 bg-red-50 opacity-75 cursor-not-allowed'
+                              : 'border-stone-200 bg-stone-100 opacity-50 cursor-not-allowed';
+                          const textCls = h.available
+                            ? 'text-slate-800'
+                            : isBooked
+                              ? 'text-red-700'
+                              : 'text-slate-400';
+                          return (
+                            <button
+                              key={h.iso}
+                              disabled={!h.available}
+                              onClick={() =>
+                                setSelectedSlot({
+                                  iso: h.iso,
+                                  label: `${formatDateShort(day.date)} · ${formatSlotRange(h.hour)}`,
+                                })
+                              }
+                              className={`w-full rounded border py-2 text-center text-xs font-bold transition-all ${btnCls} ${textCls}`}
+                            >
+                              {formatHour(h.hour)}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </>
-            )}
+              </div>
+            </div>
           </>
         )}
       </div>
