@@ -121,6 +121,17 @@ export default function CancelSection({ lang }: { lang: Lang }) {
     if (digits.length !== 10) { setError(t.errorPhone); return; }
     setLoading(true);
     try {
+      // Check for existing bookings BEFORE spending an SMS credit
+      const eligible = await fetch('/api/check-cancel-phone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: digits }),
+      });
+      const eligibleData = await eligible.json().catch(() => ({}));
+      if (!eligible.ok || !eligibleData.hasBookings) {
+        setError(t.noBookings);
+        return;
+      }
       if (!recaptchaRef.current) throw new Error('reCAPTCHA missing');
       setupRecaptcha(recaptchaRef.current.id);
       await sendSmsCode(digits);
