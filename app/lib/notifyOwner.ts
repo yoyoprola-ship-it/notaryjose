@@ -4,6 +4,7 @@ interface BookingNotifyPayload {
   customerName: string;
   customerPhone: string;      // 10 dígitos
   slotIso: string;            // "YYYY-MM-DDTHH:00:00"
+  notes?: string;             // qué necesita el customer
 }
 
 export async function notifyOwnerOfBooking(
@@ -69,12 +70,19 @@ export async function notifyOwnerOfBooking(
 function buildBody(b: BookingNotifyPayload): string {
   const phone = formatPhone(b.customerPhone);
   const when = formatSlot(b.slotIso);
-  return [
+  // Truncamos notes a 100 chars para no explotar el SMS a muchos
+  // segmentos (Twilio cobra por segmento de 160 chars).
+  const notesLine = b.notes && b.notes.trim().length > 0
+    ? `Needs: ${b.notes.trim().slice(0, 100)}${b.notes.trim().length > 100 ? '…' : ''}`
+    : '';
+  const lines = [
     'NotaryJose: new appointment',
     `${b.customerName} · ${phone}`,
     when,
-    'https://notaryjose.lafayettelamarket.com/admin/bookings',
-  ].join('\n');
+  ];
+  if (notesLine) lines.push(notesLine);
+  lines.push('https://notaryjose.lafayettelamarket.com/admin/bookings');
+  return lines.join('\n');
 }
 
 function formatPhone(p: string): string {

@@ -34,12 +34,15 @@ export interface BookingCopy {
   changeNumber: string;
   requiredName: string;
   requiredPhone: string;
+  requiredNotes: string;
   invalidCode: string;
   wrongCode: string;
   bookingConflict: string;
   networkError: string;
   slotClosedHint: string;
   bookingWith: (whenLabel: string) => string;
+  notesLabel: string;
+  notesPlaceholder: string;
 }
 
 interface Props {
@@ -64,6 +67,7 @@ export default function BookingModal({
   const [step, setStep] = useState<Step>('details');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [notes, setNotes] = useState('');
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -82,6 +86,8 @@ export default function BookingModal({
       setStep('details');
       setCode('');
       setError('');
+      // Nota: NO reseteamos name/phone/notes al reabrir para que si el
+      // customer cambia de slot sin cerrar el modal, no re-tipee todo.
       userInitiated.current = false;
     }
   }, [open, slotIso]);
@@ -105,6 +111,10 @@ export default function BookingModal({
     const digits = phone.replace(/\D/g, '');
     if (digits.length !== 10) {
       setError(t.requiredPhone);
+      return;
+    }
+    if (notes.trim().length < 5) {
+      setError(t.requiredNotes);
       return;
     }
     userInitiated.current = true;
@@ -145,6 +155,7 @@ export default function BookingModal({
         body: JSON.stringify({
           slot: slotIso,
           customerName: name.trim(),
+          notes: notes.trim(),
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -228,6 +239,20 @@ export default function BookingModal({
                   disabled={loading}
                   required
                   className={inputCls}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+                  {t.notesLabel}
+                </label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  disabled={loading}
+                  rows={3}
+                  maxLength={500}
+                  placeholder={t.notesPlaceholder}
+                  className={`${inputCls} resize-none`}
                 />
               </div>
               {error && <p className="text-sm text-red-600">{error}</p>}

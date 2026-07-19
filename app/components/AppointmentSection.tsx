@@ -62,6 +62,7 @@ export const APPT_COPY: Record<Lang, AppointmentCopy> = {
       changeNumber: '← Change details',
       requiredName: 'Please enter your name (2+ chars).',
       requiredPhone: 'Please enter a valid 10-digit US phone.',
+      requiredNotes: 'Please briefly describe what you need (5+ chars).',
       invalidCode: 'Code must be 6 digits.',
       wrongCode: 'Wrong or expired code.',
       bookingConflict:
@@ -69,6 +70,9 @@ export const APPT_COPY: Record<Lang, AppointmentCopy> = {
       networkError: 'Something went wrong. Please try again.',
       slotClosedHint: 'That hour is not available.',
       bookingWith: (whenLabel) => `You're booking: ${whenLabel}`,
+      notesLabel: 'What do you need? (required)',
+      notesPlaceholder:
+        'Briefly describe the service — e.g. Power of attorney to sell a car, USCIS I-130 filing, notarize purchase contract…',
     },
   },
   es: {
@@ -99,6 +103,7 @@ export const APPT_COPY: Record<Lang, AppointmentCopy> = {
       changeNumber: '← Cambiar datos',
       requiredName: 'Ingresá tu nombre (mínimo 2 caracteres).',
       requiredPhone: 'Ingresá un teléfono US válido de 10 dígitos.',
+      requiredNotes: 'Describí brevemente lo que necesitás (5+ caracteres).',
       invalidCode: 'El código debe tener 6 dígitos.',
       wrongCode: 'Código incorrecto o expirado.',
       bookingConflict:
@@ -106,6 +111,9 @@ export const APPT_COPY: Record<Lang, AppointmentCopy> = {
       networkError: 'Algo salió mal. Intentá de nuevo.',
       slotClosedHint: 'Esa hora no está disponible.',
       bookingWith: (whenLabel) => `Estás reservando: ${whenLabel}`,
+      notesLabel: '¿Qué necesitás? (obligatorio)',
+      notesPlaceholder:
+        'Describí brevemente el servicio — ej. Poder para vender un auto, formulario USCIS I-130, notarizar contrato de compraventa…',
     },
   },
 };

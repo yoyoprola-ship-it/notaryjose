@@ -167,6 +167,7 @@ export async function POST(request: NextRequest) {
     customerName,
     customerPhone: phoneFromToken,
     slotIso,
+    notes,
   }).catch((err) => {
     console.error('[create-booking] notify (unhandled):', err);
   });
