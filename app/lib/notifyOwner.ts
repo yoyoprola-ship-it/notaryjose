@@ -1,4 +1,4 @@
-// Notificaciones al NOTARY_OWNER_PHONE vía Twilio. Fire-and-forget.
+// Notificaciones al OWNER_PHONE vía Twilio. Fire-and-forget.
 
 interface BookingNotifyPayload {
   customerName: string;
@@ -12,11 +12,11 @@ export async function notifyOwnerOfBooking(
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
   const authToken = process.env.TWILIO_AUTH_TOKEN;
   const fromNumber = process.env.TWILIO_PHONE_NUMBER;
-  const rawOwner = process.env.NOTARY_OWNER_PHONE;
+  const rawOwner = process.env.OWNER_PHONE;
 
   if (!accountSid || !authToken || !fromNumber || !rawOwner) {
     console.warn(
-      '[notifyOwner] Missing Twilio/NOTARY_OWNER_PHONE — skipping SMS'
+      '[notifyOwner] Missing Twilio/OWNER_PHONE — skipping SMS'
     );
     return;
   }

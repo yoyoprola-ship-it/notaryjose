@@ -92,7 +92,7 @@ export default function AdminDashboard() {
           Quick info
         </p>
         <ul className="text-sm text-slate-700 space-y-1.5 list-disc list-inside">
-          <li>Owner phone (SMS notifications) reads from <code>NOTARY_OWNER_PHONE</code></li>
+          <li>Owner phone (SMS notifications) reads from <code>OWNER_PHONE</code></li>
           <li>Slots span 8 AM – 8 PM, one appointment per hour</li>
           <li>Working hours are configurable per day of the week</li>
           <li>Customers verify via SMS before their booking is created</li>

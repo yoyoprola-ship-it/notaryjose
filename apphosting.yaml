@@ -82,10 +82,10 @@ env:
     availability:
       - RUNTIME
 
-  # NOTARY_OWNER_PHONE — 10 dígitos US del owner del sitio, receptor
-  # de las notificaciones SMS cuando se crea una cita. Distinto de
-  # ADMIN_PHONE (que rudewear/toolhome usan como admin general).
-  - variable: NOTARY_OWNER_PHONE
-    secret: NOTARY_OWNER_PHONE
+  # OWNER_PHONE — 10 dígitos US del owner del sitio, receptor de las
+  # notificaciones SMS cuando se crea una cita. Distinto de ADMIN_PHONE
+  # (que rudewear/toolhome usan como admin general).
+  - variable: OWNER_PHONE
+    secret: OWNER_PHONE
     availability:
       - RUNTIME
