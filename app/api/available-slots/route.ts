@@ -3,28 +3,21 @@ import { adminDb } from '@/app/lib/firebaseAdmin';
 import { getClientIp, rateLimitOr429 } from '@/app/lib/rateLimit';
 import type { WorkingHours } from '@/app/types';
 import {
-  ctDateStr,
   dayOfWeekOf,
   isDateBlocked,
   isPastSlot,
   next7DaysCT,
   openHoursFor,
-  slotIsoToId,
 } from '@/app/lib/timeSlots';
 
 // GET /api/available-slots
-// Returns the next 7 days with per-hour availability status.
-// Public, no auth. Rate-limited per IP.
+// Returns hasta 7 días con slots agendables. Filtra horas ya pasadas
+// (no aparecen para nada) y skipea días fully-past o fully-closed.
+// Si HOY ya no tiene slots libres, empezamos por MAÑANA — pero
+// siempre devolvemos 7 días válidos como upper cap.
 //
 // Shape:
-//   [{
-//     date: "2026-07-18",
-//     dayOfWeek: 6,
-//     hours: [
-//       { hour: 8, iso: "2026-07-18T08:00:00", available: true },
-//       ...
-//     ]
-//   }, ...]
+//   { days: [{ date, dayOfWeek, hours: [{ hour, iso, available, reason? }] }] }
 
 interface DayResponse {
   date: string;
@@ -33,9 +26,12 @@ interface DayResponse {
     hour: number;
     iso: string;
     available: boolean;
-    reason?: 'past' | 'booked' | 'closed';
+    reason?: 'booked' | 'closed';
   }[];
 }
+
+const TARGET_DAYS = 7;
+const LOOKAHEAD_DAYS = 14; // buffer para saltar days fully past/closed
 
 export async function GET(request: NextRequest) {
   const ip = getClientIp(request.headers);
@@ -46,60 +42,70 @@ export async function GET(request: NextRequest) {
   if (rl) return rl;
 
   try {
-    // Load working hours config (single doc)
-    const cfgSnap = await adminDb
-      .doc('notaryjose_config/hours')
-      .get();
+    // Load working hours config
+    const cfgSnap = await adminDb.doc('notaryjose_config/hours').get();
     const cfg = cfgSnap.exists ? (cfgSnap.data() as WorkingHours) : null;
 
-    const dates = next7DaysCT(7);
+    // Candidatos: hoy + 13 días. Después filtramos a TARGET_DAYS válidos.
+    const candidates = next7DaysCT(LOOKAHEAD_DAYS);
 
-    // Load ALL confirmed bookings for those dates in one query
+    // Bookings confirmed de los candidatos. Firestore `in` acepta ≤30.
     const bookingSnap = await adminDb
       .collection('notaryjose_bookings')
-      .where('slotDate', 'in', dates)
+      .where('slotDate', 'in', candidates)
       .where('status', '==', 'confirmed')
       .get();
 
     const bookedSet = new Set<string>();
     bookingSnap.docs.forEach((d) => {
       const data = d.data();
-      bookedSet.add(`${data.slotDate}T${String(data.slotHour).padStart(2, '0')}`);
+      bookedSet.add(
+        `${data.slotDate}T${String(data.slotHour).padStart(2, '0')}`
+      );
     });
 
-    const today = ctDateStr();
-    void today; // reserved for future use
+    const out: DayResponse[] = [];
+    for (const date of candidates) {
+      if (out.length >= TARGET_DAYS) break;
 
-    const out: DayResponse[] = dates.map((date) => {
       const dow = dayOfWeekOf(date);
       const openHours = isDateBlocked(date, cfg) ? [] : openHoursFor(dow, cfg);
       const openSet = new Set(openHours);
 
-      // Always show 8..19 in the response, mark unavailable ones
-      const hours = [];
+      const hours: DayResponse['hours'] = [];
       for (let h = 8; h <= 19; h++) {
+        // Skip horas pasadas — ni aparecen. Es la diferencia clave con
+        // la versión anterior que las mostraba con reason='past'.
+        if (isPastSlot(date, h)) continue;
+
         const iso = `${date}T${String(h).padStart(2, '0')}:00:00`;
         const key = `${date}T${String(h).padStart(2, '0')}`;
         let available = true;
-        let reason: 'past' | 'booked' | 'closed' | undefined;
+        let reason: 'booked' | 'closed' | undefined;
         if (!openSet.has(h)) {
           available = false;
           reason = 'closed';
         } else if (bookedSet.has(key)) {
           available = false;
           reason = 'booked';
-        } else if (isPastSlot(date, h)) {
-          available = false;
-          reason = 'past';
         }
         hours.push({ hour: h, iso, available, reason });
       }
 
-      return { date, dayOfWeek: dow, hours };
-    });
+      // Si no queda ninguna hora (día fully past + no future slots),
+      // skipeamos el día para no mostrar una columna vacía.
+      if (hours.length === 0) continue;
 
-    // Helper para el cliente si quiere mostrar el doc id (para keys)
-    void slotIsoToId;
+      // Si el día es fully closed (todas las horas marcadas closed y
+      // ninguna available/booked), también skipeamos — un día donde
+      // no hay nada para reservar solo agrega ruido al selector.
+      const hasAnyOpenOrBooked = hours.some(
+        (h) => h.available || h.reason === 'booked'
+      );
+      if (!hasAnyOpenOrBooked) continue;
+
+      out.push({ date, dayOfWeek: dow, hours });
+    }
 
     return NextResponse.json({ days: out });
   } catch (err) {

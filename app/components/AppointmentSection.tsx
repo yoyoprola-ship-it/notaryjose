@@ -13,7 +13,10 @@ interface HourEntry {
   hour: number;
   iso: string;
   available: boolean;
-  reason?: 'past' | 'booked' | 'closed';
+  // Nota: el API ya no devuelve 'past' — las horas ya vencidas se
+  // filtran en el server y no aparecen en la respuesta. Solo quedan
+  // 'booked' y 'closed' como razones de no-disponibilidad.
+  reason?: 'booked' | 'closed';
 }
 interface DayEntry {
   date: string;
@@ -29,7 +32,7 @@ export interface AppointmentCopy {
   loading: string;
   errorLoad: string;
   refresh: string;
-  labels: { available: string; booked: string; closed: string; past: string };
+  labels: { available: string; booked: string; closed: string };
   modal: BookingCopy;
 }
 
@@ -42,7 +45,7 @@ export const APPT_COPY: Record<Lang, AppointmentCopy> = {
     loading: 'Loading slots…',
     errorLoad: 'Could not load slots. Please refresh.',
     refresh: 'Refresh',
-    labels: { available: 'Open', booked: 'Booked', closed: 'Closed', past: 'Past' },
+    labels: { available: 'Open', booked: 'Booked', closed: 'Closed' },
     modal: {
       title: 'Book your slot',
       step1of3: 'Step 1 of 2 — Your details',
@@ -83,7 +86,7 @@ export const APPT_COPY: Record<Lang, AppointmentCopy> = {
     loading: 'Cargando…',
     errorLoad: 'No pudimos cargar los turnos. Por favor refrescá.',
     refresh: 'Refrescar',
-    labels: { available: 'Libre', booked: 'Ocupado', closed: 'Cerrado', past: 'Pasado' },
+    labels: { available: 'Libre', booked: 'Ocupado', closed: 'Cerrado' },
     modal: {
       title: 'Reservar turno',
       step1of3: 'Paso 1 de 2 — Tus datos',
@@ -265,18 +268,14 @@ export default function AppointmentSection({ lang }: Props) {
                               ? 'text-green-700'
                               : h.reason === 'booked'
                                 ? 'text-red-600'
-                                : h.reason === 'past'
-                                  ? 'text-slate-400'
-                                  : 'text-slate-500'
+                                : 'text-slate-500'
                           }`}
                         >
                           {h.available
                             ? t.labels.available
                             : h.reason === 'booked'
                               ? t.labels.booked
-                              : h.reason === 'past'
-                                ? t.labels.past
-                                : t.labels.closed}
+                              : t.labels.closed}
                         </p>
                       </button>
                     );
