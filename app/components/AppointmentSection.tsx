@@ -1,7 +1,7 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import BookingModal, { type BookingCopy } from './BookingModal';
-import { formatDateShort, formatHour, formatSlotRange } from '@/app/lib/timeSlots';
+import { ctDateStr, formatDateShort, formatHour, formatSlotRange } from '@/app/lib/timeSlots';
 
 // Sección de reservas embebible en cualquier página. Igual UX que la
 // standalone /appointments — calendar de 7 días + grid de horas 8-19
@@ -127,11 +127,15 @@ interface Props {
   compact?: boolean;
 }
 
+const DOW_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DOW_LABELS_ES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+
 export default function AppointmentSection({ lang }: Props) {
   const t = APPT_COPY[lang];
   const [days, setDays] = useState<DayEntry[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<{
     iso: string;
     label: string;
@@ -158,16 +162,50 @@ export default function AppointmentSection({ lang }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Build a map of date → DayEntry for quick lookup
+  const dayMap = useMemo(
+    () => new Map((days || []).map((d) => [d.date, d])),
+    [days]
+  );
+
+  // Current month in CT timezone
+  const todayCT = ctDateStr();
+  const todayYear = parseInt(todayCT.slice(0, 4), 10);
+  const todayMonth = parseInt(todayCT.slice(5, 7), 10);
+
+  // Build calendar grid cells for the current month
+  const calendarCells = useMemo(() => {
+    const firstDow = new Date(todayYear, todayMonth - 1, 1).getDay(); // 0=Sun
+    const daysInMonth = new Date(todayYear, todayMonth, 0).getDate();
+    const cells: Array<{ day: number; date: string } | null> = [];
+    for (let i = 0; i < firstDow; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = `${todayYear}-${String(todayMonth).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      cells.push({ day: d, date });
+    }
+    return cells;
+  }, [todayYear, todayMonth]);
+
+  const monthLabel = new Date(todayYear, todayMonth - 1, 1).toLocaleDateString(
+    lang === 'es' ? 'es-US' : 'en-US',
+    { month: 'long', year: 'numeric' }
+  );
+
+  const selectedDay = useMemo(
+    () => (selectedDate ? (dayMap.get(selectedDate) ?? null) : null),
+    [selectedDate, dayMap]
+  );
+
+  const dowLabels = lang === 'es' ? DOW_LABELS_ES : DOW_LABELS;
+
   return (
     <section
       id="book"
       className="px-6 py-16 bg-stone-50 border-y border-stone-200"
     >
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-2xl mx-auto">
         <div className="mb-8">
-          <p className="text-xs font-bold uppercase tracking-[0.25em] text-amber-700 mb-2">
-            —
-          </p>
+          <p className="text-xs font-bold uppercase tracking-[0.25em] text-amber-700 mb-2">—</p>
           <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 mb-2">
             {t.title}
           </h2>
@@ -188,75 +226,127 @@ export default function AppointmentSection({ lang }: Props) {
         )}
 
         {days && !loading && (
-          <>
-            {/* Legend */}
-            <div className="flex gap-5 mb-5">
-              {[
-                { color: 'bg-green-50 border-green-300', label: t.labels.available },
-                { color: 'bg-red-50 border-red-200', label: t.labels.booked },
-                { color: 'bg-stone-100 border-stone-200', label: t.labels.closed },
-              ].map(({ color, label }) => (
-                <span key={label} className="flex items-center gap-1.5 text-xs text-slate-500">
-                  <span className={`w-3 h-3 rounded-sm border inline-block ${color}`} />
-                  {label}
-                </span>
-              ))}
-            </div>
-
-            {/* Weekly grid — horizontal scroll on small screens */}
-            <div className="overflow-x-auto -mx-6 sm:mx-0">
-              <div className="min-w-[560px] px-6 sm:px-0">
-                <div className="grid grid-cols-7 gap-2">
-                  {days.map((day) => (
-                    <div key={day.date} className="flex flex-col">
-                      {/* Day header */}
-                      <div className="text-center pb-2 mb-2 border-b border-stone-200">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 leading-tight">
-                          {formatDateShort(day.date).split(',')[0]}
-                        </p>
-                        <p className="text-sm font-black text-slate-900 leading-tight">
-                          {formatDateShort(day.date).split(', ')[1] ??
-                            formatDateShort(day.date)}
-                        </p>
-                      </div>
-
-                      {/* Hour slots */}
-                      <div className="flex flex-col gap-1">
-                        {day.hours.map((h) => {
-                          const isBooked = !h.available && h.reason === 'booked';
-                          const btnCls = h.available
-                            ? 'border-green-300 bg-green-50 hover:border-green-500 hover:shadow-sm cursor-pointer'
-                            : isBooked
-                              ? 'border-red-200 bg-red-50 opacity-75 cursor-not-allowed'
-                              : 'border-stone-200 bg-stone-100 opacity-50 cursor-not-allowed';
-                          const textCls = h.available
-                            ? 'text-slate-800'
-                            : isBooked
-                              ? 'text-red-700'
-                              : 'text-slate-400';
-                          return (
-                            <button
-                              key={h.iso}
-                              disabled={!h.available}
-                              onClick={() =>
-                                setSelectedSlot({
-                                  iso: h.iso,
-                                  label: `${formatDateShort(day.date)} · ${formatSlotRange(h.hour)}`,
-                                })
-                              }
-                              className={`w-full rounded border py-2 text-center text-xs font-bold transition-all ${btnCls} ${textCls}`}
-                            >
-                              {formatHour(h.hour)}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+          <div className="bg-white border border-stone-200 rounded-xl overflow-hidden">
+            {/* Month header */}
+            <div className="px-5 py-4 border-b border-stone-100 flex items-center justify-between">
+              <p className="text-base font-black text-slate-900 capitalize">{monthLabel}</p>
+              {/* Legend */}
+              <div className="flex gap-3">
+                {[
+                  { color: 'bg-green-100 border-green-300', label: t.labels.available },
+                  { color: 'bg-stone-100 border-stone-300', label: t.labels.closed },
+                ].map(({ color, label }) => (
+                  <span key={label} className="flex items-center gap-1 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                    <span className={`w-2.5 h-2.5 rounded-sm border inline-block ${color}`} />
+                    {label}
+                  </span>
+                ))}
               </div>
             </div>
-          </>
+
+            <div className="p-4">
+              {/* Day-of-week headers */}
+              <div className="grid grid-cols-7 mb-2">
+                {dowLabels.map((d) => (
+                  <div key={d} className="text-center text-[10px] font-bold uppercase tracking-wider text-slate-400 py-1">
+                    {d}
+                  </div>
+                ))}
+              </div>
+
+              {/* Calendar day cells */}
+              <div className="grid grid-cols-7 gap-1 mb-6">
+                {calendarCells.map((cell, i) => {
+                  if (!cell) return <div key={`e-${i}`} />;
+                  const entry = dayMap.get(cell.date);
+                  const isPast = cell.date < todayCT;
+                  const hasAvailable = !!entry?.hours.some((h) => h.available);
+                  const hasEntry = !!entry;
+                  const isSelected = selectedDate === cell.date;
+                  const isToday = cell.date === todayCT;
+
+                  let cellCls: string;
+                  if (isPast || !hasEntry) {
+                    cellCls = 'text-slate-300 cursor-default';
+                  } else if (hasAvailable) {
+                    cellCls = isSelected
+                      ? 'bg-green-500 text-white border-green-600 shadow-sm cursor-pointer'
+                      : 'bg-green-50 text-green-800 border-green-300 hover:bg-green-100 cursor-pointer';
+                  } else {
+                    cellCls = 'bg-stone-100 text-slate-400 border-stone-200 cursor-default opacity-60';
+                  }
+
+                  return (
+                    <button
+                      key={cell.date}
+                      disabled={isPast || !hasEntry || !hasAvailable}
+                      onClick={() =>
+                        setSelectedDate(isSelected ? null : cell.date)
+                      }
+                      className={`aspect-square rounded-lg border flex flex-col items-center justify-center transition-all ${cellCls}`}
+                    >
+                      <span className={`text-sm font-black leading-none ${isToday && !isSelected ? 'underline decoration-dotted' : ''}`}>
+                        {cell.day}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Hour slots for selected day */}
+              {selectedDay && (
+                <div className="border-t border-stone-100 pt-4">
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
+                    {formatDateShort(selectedDate!)} — {t.pickHour}
+                  </p>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                    {selectedDay.hours.map((h) => {
+                      const isBooked = !h.available && h.reason === 'booked';
+                      const btnCls = h.available
+                        ? 'border-green-300 bg-green-50 hover:border-green-500 hover:shadow-sm cursor-pointer'
+                        : isBooked
+                          ? 'border-red-200 bg-red-50 opacity-75 cursor-not-allowed'
+                          : 'border-stone-200 bg-stone-100 opacity-50 cursor-not-allowed';
+                      const textCls = h.available
+                        ? 'text-slate-800'
+                        : isBooked
+                          ? 'text-red-700'
+                          : 'text-slate-400';
+                      const statusCls = h.available
+                        ? 'text-green-700'
+                        : isBooked
+                          ? 'text-red-500'
+                          : 'text-slate-400';
+                      return (
+                        <button
+                          key={h.iso}
+                          disabled={!h.available}
+                          onClick={() =>
+                            setSelectedSlot({
+                              iso: h.iso,
+                              label: `${formatDateShort(selectedDate!)} · ${formatSlotRange(h.hour)}`,
+                            })
+                          }
+                          className={`rounded-lg border px-3 py-3 text-left transition-all ${btnCls}`}
+                        >
+                          <p className={`text-base font-black tabular-nums leading-none ${textCls}`}>
+                            {formatHour(h.hour)}
+                          </p>
+                          <p className={`text-[10px] font-bold uppercase tracking-wider mt-1 ${statusCls}`}>
+                            {h.available
+                              ? t.labels.available
+                              : isBooked
+                                ? t.labels.booked
+                                : t.labels.closed}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </div>
 
