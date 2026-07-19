@@ -23,7 +23,8 @@ export interface Booking {
   customerPhone: string;                  // 10 dígitos US
   userId: string;                         // Firebase Auth uid
   status: 'confirmed' | 'cancelled';
-  notes?: string;                         // futuro
+  notes?: string;
+  cancelledBy?: 'user' | 'owner' | 'admin';
   createdAt?: FirestoreTimestampish;
   cancelledAt?: FirestoreTimestampish;
 }

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from './lib/firebase';
 import AppointmentSection from './components/AppointmentSection';
+import CancelSection from './components/CancelSection';
 
 // Landing pública de Notary Jose. Portea la sección de la app original
 // (lafayette-market/app/services/providers/NotaryJose) como subdomain
@@ -14,7 +15,7 @@ import AppointmentSection from './components/AppointmentSection';
 // ─── Copy bilingüe ─────────────────────────────────────────────
 
 interface CopyBlock {
-  nav: { services: string; book: string; contact: string; language: string };
+  nav: { services: string; book: string; cancel: string; contact: string; language: string };
   hero: {
     eyebrow: string;
     title: string;
@@ -44,7 +45,7 @@ interface CopyBlock {
 
 const COPY: { en: CopyBlock; es: CopyBlock } = {
   en: {
-    nav: { services: 'Services', book: 'Book', contact: 'Contact', language: 'ES' },
+    nav: { services: 'Services', book: 'Book', cancel: 'Cancel appt', contact: 'Contact', language: 'ES' },
     hero: {
       eyebrow: 'Bilingual notary public — Lafayette, Louisiana',
       title: 'Jose E. Garcia',
@@ -116,7 +117,7 @@ const COPY: { en: CopyBlock; es: CopyBlock } = {
     footer: 'Notary services in Lafayette, LA · English and Spanish',
   },
   es: {
-    nav: { services: 'Servicios', book: 'Reservar', contact: 'Contacto', language: 'EN' },
+    nav: { services: 'Servicios', book: 'Reservar', cancel: 'Cancelar cita', contact: 'Contacto', language: 'EN' },
     hero: {
       eyebrow: 'Notario público bilingüe — Lafayette, Luisiana',
       title: 'Jose E. Garcia',
@@ -201,6 +202,7 @@ export default function LandingPage() {
       <Hero t={t} />
       <ServicesGrid t={t} />
       <AppointmentSection lang={lang} />
+      <CancelSection lang={lang} />
       <ContactSection t={t} lang={lang} />
       <Footer t={t} />
     </main>
@@ -239,6 +241,12 @@ function TopBar({
             className="hidden sm:inline text-sm font-bold text-amber-800 hover:text-amber-900"
           >
             {t.nav.book}
+          </a>
+          <a
+            href="#cancel"
+            className="hidden sm:inline text-sm text-slate-600 hover:text-slate-900"
+          >
+            {t.nav.cancel}
           </a>
           <a
             href="#contact"

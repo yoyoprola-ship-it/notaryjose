@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import AppointmentSection, { APPT_COPY } from '@/app/components/AppointmentSection';
+import CancelSection from '@/app/components/CancelSection';
 
 // Standalone /appointments — mismo AppointmentSection que la home,
 // solo con topbar propio para navegación directa. La home tiene
@@ -37,6 +38,7 @@ export default function AppointmentsPage() {
         </div>
       </header>
       <AppointmentSection lang={lang} />
+      <CancelSection lang={lang} />
     </main>
   );
 }

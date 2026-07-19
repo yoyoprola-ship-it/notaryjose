@@ -76,6 +76,7 @@ export default function BookingsPage() {
       await updateDoc(doc(db, 'notaryjose_bookings', b.id), {
         status: 'cancelled',
         cancelledAt: serverTimestamp(),
+        cancelledBy: 'admin',
       });
       setItems((prev) =>
         prev.map((x) => (x.id === b.id ? { ...x, status: 'cancelled' } : x))
@@ -184,6 +185,14 @@ function BookingCard({
           </span>
           {formatDateShort(b.slotDate)} · {formatSlotRange(b.slotHour)}
         </p>
+        {isCancelled && b.cancelledBy && (
+          <p className="text-xs text-slate-500 mt-1">
+            Cancelled by:{' '}
+            <span className="font-bold">
+              {b.cancelledBy === 'user' ? 'customer' : b.cancelledBy}
+            </span>
+          </p>
+        )}
         {b.notes && (
           <p className="text-sm text-slate-600 mt-2 border-l-2 border-stone-300 pl-3">
             {b.notes}

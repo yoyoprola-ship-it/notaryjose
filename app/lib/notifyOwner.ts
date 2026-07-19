@@ -1,4 +1,6 @@
 // Notificaciones al OWNER_PHONE vía Twilio. Fire-and-forget.
+// notifyOwnerOfBooking  — nueva cita creada
+// notifyOwnerOfCancellation — cita cancelada por el cliente
 
 interface BookingNotifyPayload {
   customerName: string;
@@ -62,6 +64,63 @@ export async function notifyOwnerOfBooking(
     console.log('[notifyOwner] SMS sent to owner');
   } catch (err) {
     console.error('[notifyOwner] SMS send failed:', err);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export interface CancellationNotifyPayload {
+  customerName: string;
+  customerPhone: string;
+  slotIso: string;
+}
+
+export async function notifyOwnerOfCancellation(
+  b: CancellationNotifyPayload
+): Promise<void> {
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  const fromNumber = process.env.TWILIO_PHONE_NUMBER;
+  const rawOwner = process.env.OWNER_PHONE;
+
+  if (!accountSid || !authToken || !fromNumber || !rawOwner) return;
+
+  const digits = rawOwner.replace(/\D/g, '');
+  const toE164 =
+    digits.length === 10
+      ? `+1${digits}`
+      : digits.length === 11 && digits.startsWith('1')
+        ? `+${digits}`
+        : `+${digits}`;
+
+  const phone = formatPhone(b.customerPhone);
+  const when = formatSlot(b.slotIso);
+  const body = [
+    'NotaryJose: cita cancelada',
+    `${b.customerName} · ${phone}`,
+    when,
+  ].join('\n');
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
+  try {
+    const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+    const params = new URLSearchParams({ To: toE164, From: fromNumber, Body: body });
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString('base64')}`,
+      },
+      body: params.toString(),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      const r = await res.json().catch(() => ({}));
+      console.error('[notifyOwner] cancellation SMS error:', { code: r?.code, status: res.status });
+    }
+  } catch (err) {
+    console.error('[notifyOwner] cancellation SMS failed:', err);
   } finally {
     clearTimeout(timer);
   }

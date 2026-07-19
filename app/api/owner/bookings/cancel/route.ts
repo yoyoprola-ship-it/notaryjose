@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
     await ref.update({
       status: 'cancelled',
       cancelledAt: FieldValue.serverTimestamp(),
+      cancelledBy: 'owner',
     });
     return NextResponse.json({ success: true });
   } catch (err) {
