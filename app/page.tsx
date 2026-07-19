@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from './lib/firebase';
+import AppointmentSection from './components/AppointmentSection';
 
 // Landing pública de Notary Jose. Portea la sección de la app original
 // (lafayette-market/app/services/providers/NotaryJose) como subdomain
@@ -13,7 +14,7 @@ import { db } from './lib/firebase';
 // ─── Copy bilingüe ─────────────────────────────────────────────
 
 interface CopyBlock {
-  nav: { services: string; contact: string; language: string };
+  nav: { services: string; book: string; contact: string; language: string };
   hero: {
     eyebrow: string;
     title: string;
@@ -43,7 +44,7 @@ interface CopyBlock {
 
 const COPY: { en: CopyBlock; es: CopyBlock } = {
   en: {
-    nav: { services: 'Services', contact: 'Contact', language: 'ES' },
+    nav: { services: 'Services', book: 'Book', contact: 'Contact', language: 'ES' },
     hero: {
       eyebrow: 'Bilingual notary public — Lafayette, Louisiana',
       title: 'Jose E. Garcia',
@@ -115,7 +116,7 @@ const COPY: { en: CopyBlock; es: CopyBlock } = {
     footer: 'Notary services in Lafayette, LA · English and Spanish',
   },
   es: {
-    nav: { services: 'Servicios', contact: 'Contacto', language: 'EN' },
+    nav: { services: 'Servicios', book: 'Reservar', contact: 'Contacto', language: 'EN' },
     hero: {
       eyebrow: 'Notario público bilingüe — Lafayette, Luisiana',
       title: 'Jose E. Garcia',
@@ -199,6 +200,7 @@ export default function LandingPage() {
       <TopBar lang={lang} onToggleLang={() => setLang(lang === 'en' ? 'es' : 'en')} t={t} />
       <Hero t={t} />
       <ServicesGrid t={t} />
+      <AppointmentSection lang={lang} />
       <ContactSection t={t} lang={lang} />
       <Footer t={t} />
     </main>
@@ -231,6 +233,12 @@ function TopBar({
             className="hidden sm:inline text-sm text-slate-600 hover:text-slate-900"
           >
             {t.nav.services}
+          </a>
+          <a
+            href="#book"
+            className="hidden sm:inline text-sm font-bold text-amber-800 hover:text-amber-900"
+          >
+            {t.nav.book}
           </a>
           <a
             href="#contact"
@@ -280,7 +288,7 @@ function Hero({ t }: { t: CopyBlock }) {
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <a
-            href="/appointments"
+            href="#book"
             className="px-8 py-3 bg-amber-800 hover:bg-amber-900 text-white font-bold rounded transition-colors"
           >
             {t.hero.cta}
