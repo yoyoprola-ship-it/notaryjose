@@ -46,3 +46,46 @@ env:
     availability:
       - BUILD
       - RUNTIME
+
+  # ─── Resend (email) — shared con lafayette/rudewear/toolhome ─
+  # Usado para el 2FA del admin.
+  - variable: RESEND_API_KEY
+    secret: RESEND_API_KEY
+    availability:
+      - RUNTIME
+
+  - variable: EMAIL_FROM
+    secret: EMAIL_FROM
+    availability:
+      - RUNTIME
+
+  # ─── Internal secret — hash del 6-digit email code ────────
+  - variable: INTERNAL_API_SECRET
+    secret: INTERNAL_API_SECRET
+    availability:
+      - RUNTIME
+
+  # ─── Twilio — SMS al owner cuando llega una reserva ────────
+  # Compartimos la misma cuenta Twilio que rudewear/lafayette.
+  - variable: TWILIO_ACCOUNT_SID
+    secret: TWILIO_ACCOUNT_SID
+    availability:
+      - RUNTIME
+
+  - variable: TWILIO_AUTH_TOKEN
+    secret: TWILIO_AUTH_TOKEN
+    availability:
+      - RUNTIME
+
+  - variable: TWILIO_PHONE_NUMBER
+    secret: TWILIO_PHONE_NUMBER
+    availability:
+      - RUNTIME
+
+  # NOTARY_OWNER_PHONE — 10 dígitos US del owner del sitio, receptor
+  # de las notificaciones SMS cuando se crea una cita. Distinto de
+  # ADMIN_PHONE (que rudewear/toolhome usan como admin general).
+  - variable: NOTARY_OWNER_PHONE
+    secret: NOTARY_OWNER_PHONE
+    availability:
+      - RUNTIME

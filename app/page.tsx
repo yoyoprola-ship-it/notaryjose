@@ -280,7 +280,7 @@ function Hero({ t }: { t: CopyBlock }) {
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <a
-            href="#contact"
+            href="/appointments"
             className="px-8 py-3 bg-amber-800 hover:bg-amber-900 text-white font-bold rounded transition-colors"
           >
             {t.hero.cta}
