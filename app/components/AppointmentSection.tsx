@@ -238,42 +238,42 @@ export default function AppointmentSection({ lang }: Props) {
                   {currentDay.hours.map((h) => {
                     const label = formatHour(h.hour);
                     const range = formatSlotRange(h.hour);
-                    const disabled = !h.available;
+                    const isBooked = !h.available && h.reason === 'booked';
+                    const isClosed = !h.available && h.reason !== 'booked';
+                    const btnCls = h.available
+                      ? 'border-green-300 bg-green-50 hover:border-green-500 hover:shadow-sm cursor-pointer'
+                      : isBooked
+                        ? 'border-red-200 bg-red-50 opacity-75 cursor-not-allowed'
+                        : 'border-stone-200 bg-stone-100 opacity-50 cursor-not-allowed';
+                    const hourCls = h.available
+                      ? 'text-slate-900'
+                      : isBooked
+                        ? 'text-red-700'
+                        : 'text-slate-400';
+                    const statusCls = h.available
+                      ? 'text-green-700'
+                      : isBooked
+                        ? 'text-red-600'
+                        : 'text-slate-400';
                     return (
                       <button
                         key={h.iso}
-                        disabled={disabled}
+                        disabled={!h.available}
                         onClick={() =>
                           setSelectedSlot({
                             iso: h.iso,
                             label: `${formatDateShort(currentDay.date)} · ${range}`,
                           })
                         }
-                        className={`rounded border px-3 py-3 text-left transition-all ${
-                          disabled
-                            ? 'border-stone-200 bg-stone-100 opacity-60'
-                            : 'border-stone-300 bg-white hover:border-amber-700 hover:shadow-sm'
-                        }`}
+                        className={`rounded border px-3 py-3 text-left transition-all ${btnCls}`}
                       >
-                        <p
-                          className={`text-lg font-black tabular-nums ${
-                            disabled ? 'text-slate-500' : 'text-slate-900'
-                          }`}
-                        >
+                        <p className={`text-lg font-black tabular-nums ${hourCls}`}>
                           {label}
                         </p>
-                        <p
-                          className={`text-[10px] font-bold uppercase tracking-wider mt-0.5 ${
-                            h.available
-                              ? 'text-green-700'
-                              : h.reason === 'booked'
-                                ? 'text-red-600'
-                                : 'text-slate-500'
-                          }`}
-                        >
+                        <p className={`text-[10px] font-bold uppercase tracking-wider mt-0.5 ${statusCls}`}>
                           {h.available
                             ? t.labels.available
-                            : h.reason === 'booked'
+                            : isBooked
                               ? t.labels.booked
                               : t.labels.closed}
                         </p>
