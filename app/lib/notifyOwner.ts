@@ -73,7 +73,7 @@ function buildBody(b: BookingNotifyPayload): string {
   // Truncamos notes a 100 chars para no explotar el SMS a muchos
   // segmentos (Twilio cobra por segmento de 160 chars).
   const notesLine = b.notes && b.notes.trim().length > 0
-    ? `Needs: ${b.notes.trim().slice(0, 100)}${b.notes.trim().length > 100 ? '…' : ''}`
+    ? `Needs: ${b.notes.trim().slice(0, 20)}${b.notes.trim().length > 20 ? '…' : ''}`
     : '';
   const lines = [
     'NotaryJose: new appointment',
@@ -81,7 +81,6 @@ function buildBody(b: BookingNotifyPayload): string {
     when,
   ];
   if (notesLine) lines.push(notesLine);
-  lines.push('https://notaryjose.lafayettelamarket.com/admin/bookings');
   return lines.join('\n');
 }
 
