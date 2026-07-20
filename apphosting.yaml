@@ -89,3 +89,9 @@ env:
     secret: OWNER_PHONE
     availability:
       - RUNTIME
+
+  # ─── Cron secret — autoriza llamadas de Cloud Scheduler ────
+  - variable: CRON_SECRET
+    secret: CRON_SECRET
+    availability:
+      - RUNTIME
