@@ -26,28 +26,36 @@ async function countBetween(col: string, start: Timestamp, end: Timestamp): Prom
   return snap.size;
 }
 
-async function getTwilioMinutes(startDate: string, endDate: string): Promise<number> {
+async function getTwilioCallMinutes(startDate: string, endDate: string): Promise<number> {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
   const authToken  = process.env.TWILIO_AUTH_TOKEN;
-  if (!accountSid || !authToken) return 0;
+  const rawPhone   = process.env.TWILIO_PHONE_NUMBER ?? '';
+  if (!accountSid || !authToken || !rawPhone) return 0;
+
+  const digits = rawPhone.replace(/\D/g, '');
+  const phone  = digits.length === 10 ? `+1${digits}` : `+${digits}`;
+  const creds  = Buffer.from(`${accountSid}:${authToken}`).toString('base64');
+
+  let totalSeconds = 0;
+  let pageUrl: string | null =
+    `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Calls.json` +
+    `?To=${encodeURIComponent(phone)}&StartTime>=${startDate}&StartTime<=${endDate}&PageSize=100`;
+
   try {
-    const url = new URL(
-      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Usage/Records.json`
-    );
-    url.searchParams.set('Category',  'calls-inbound');
-    url.searchParams.set('StartDate', startDate);
-    url.searchParams.set('EndDate',   endDate);
-    const res = await fetch(url.toString(), {
-      headers: {
-        Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString('base64')}`,
-      },
-    });
-    if (!res.ok) return 0;
-    const data = await res.json() as { usage_records?: { usage?: string }[] };
-    return Math.round((parseFloat(data.usage_records?.[0]?.usage ?? '0') || 0) * 10) / 10;
+    while (pageUrl) {
+      const res = await fetch(pageUrl, { headers: { Authorization: `Basic ${creds}` } });
+      if (!res.ok) break;
+      const data = await res.json() as { calls?: { duration: string }[]; next_page_uri?: string | null };
+      for (const call of data.calls ?? []) {
+        totalSeconds += parseInt(call.duration ?? '0', 10);
+      }
+      pageUrl = data.next_page_uri ? `https://api.twilio.com${data.next_page_uri}` : null;
+    }
   } catch {
     return 0;
   }
+
+  return Math.round((totalSeconds / 60) * 10) / 10;
 }
 
 export async function GET(request: NextRequest) {
@@ -69,8 +77,8 @@ export async function GET(request: NextRequest) {
     countBetween('notaryjose_calls',         prev.start, prev.end),
     countBetween('notaryjose_consultations', cur.start,  cur.end),
     countBetween('notaryjose_consultations', prev.start, prev.end),
-    getTwilioMinutes(cur.startStr,  cur.endStr),
-    getTwilioMinutes(prev.startStr, prev.endStr),
+    getTwilioCallMinutes(cur.startStr,  cur.endStr),
+    getTwilioCallMinutes(prev.startStr, prev.endStr),
   ]);
 
   return NextResponse.json({
