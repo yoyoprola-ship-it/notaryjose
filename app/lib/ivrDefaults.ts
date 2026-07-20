@@ -10,6 +10,8 @@ export interface IvrConfig {
   consultPrompt: { en: string; es: string };
   consultNoRec:  { en: string; es: string };
   consultBye:    { en: string; es: string };
+  directPrompt:  { en: string; es: string };
+  directBusy:    { en: string; es: string };
   retry:         { en: string; es: string };
 }
 
@@ -24,8 +26,8 @@ export const DEFAULT_IVR_CONFIG: IvrConfig = {
     es: 'Para español, marque dos.',
   },
   menu: {
-    en: 'Press 1 to book an appointment. Press 2 to leave a voice consultation.',
-    es: 'Marque uno para agendar una cita. Marque dos para dejar una consulta de voz.',
+    en: 'Press 1 to book an appointment. Press 2 to leave a voice consultation. Press 3 to speak directly with the notary.',
+    es: 'Marque uno para agendar una cita. Marque dos para dejar una consulta de voz. Marque tres para hablar directamente con el notario.',
   },
   bookConfirm: {
     en: `Visit ${SITE_DISPLAY} to book your appointment online. A text message with the link has been sent to your phone.`,
@@ -46,6 +48,14 @@ export const DEFAULT_IVR_CONFIG: IvrConfig = {
   consultBye: {
     en: 'Your message has been saved. We will get back to you soon. Goodbye!',
     es: 'Su mensaje ha sido guardado. Nos comunicaremos pronto con usted. ¡Hasta luego!',
+  },
+  directPrompt: {
+    en: 'Please hold while we connect you to the notary.',
+    es: 'Por favor espere mientras lo conectamos con el notario.',
+  },
+  directBusy: {
+    en: 'The notary is not available right now. Please call back later or press 2 to leave a voice message. Goodbye.',
+    es: 'El notario no está disponible en este momento. Por favor llame más tarde o marque dos para dejar un mensaje de voz. Hasta luego.',
   },
   retry: {
     en: 'I did not understand your selection.',

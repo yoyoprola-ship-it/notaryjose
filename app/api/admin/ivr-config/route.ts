@@ -34,9 +34,9 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const body = await request.json() as Partial<IvrConfig>;
-  const { voices, intro, langPrompt, menu, bookConfirm, bookBye, consultPrompt, consultNoRec, consultBye, retry } = body;
+  const { voices, intro, langPrompt, menu, bookConfirm, bookBye, consultPrompt, consultNoRec, consultBye, directPrompt, directBusy, retry } = body;
   await adminDb.collection('notaryjose_ivr_config').doc('default').set({
-    voices, intro, langPrompt, menu, bookConfirm, bookBye, consultPrompt, consultNoRec, consultBye, retry,
+    voices, intro, langPrompt, menu, bookConfirm, bookBye, consultPrompt, consultNoRec, consultBye, directPrompt, directBusy, retry,
   });
   return NextResponse.json({ ok: true });
 }

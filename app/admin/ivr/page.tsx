@@ -47,6 +47,13 @@ const SECTIONS: { title: string; fields: { key: keyof IvrConfig; label: string }
     ],
   },
   {
+    title: 'Option 3 — Speak with the notary',
+    fields: [
+      { key: 'directPrompt', label: 'Connecting message (plays while transferring)' },
+      { key: 'directBusy',   label: 'Unavailable message (plays if notary does not answer)' },
+    ],
+  },
+  {
     title: 'Fallback',
     fields: [
       { key: 'retry', label: 'Unrecognized key pressed' },

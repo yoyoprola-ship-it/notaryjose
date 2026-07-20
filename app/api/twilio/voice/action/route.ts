@@ -71,6 +71,25 @@ export async function POST(request: NextRequest) {
 </Response>`);
   }
 
+  // Option 3: Direct call to notary
+  if (digits === '3') {
+    const ownerPhone = process.env.OWNER_PHONE ?? '';
+    if (!ownerPhone) {
+      return twiml(`
+<Response>
+  <Say voice="${voice}">${cfg.directBusy[lang]}</Say>
+  <Hangup/>
+</Response>`);
+    }
+    return twiml(`
+<Response>
+  <Say voice="${voice}">${cfg.directPrompt[lang]}</Say>
+  <Dial action="${BASE}/api/twilio/voice/direct-fallback?lang=${lang}" timeout="30">
+    <Number>${ownerPhone}</Number>
+  </Dial>
+</Response>`);
+  }
+
   // Unrecognized digit — back to menu
   return twiml(`
 <Response>
