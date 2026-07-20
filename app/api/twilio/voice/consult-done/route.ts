@@ -13,8 +13,8 @@ function twiml(xml: string) {
 }
 
 const BYE = {
-  en: { voice: 'en-US', text: 'Your message has been saved. We will get back to you soon. Goodbye!' },
-  es: { voice: 'es-MX', text: 'Su mensaje ha sido guardado. Nos comunicaremos pronto con usted. ¡Hasta luego!' },
+  en: { voice: 'Polly.Matthew', text: 'Your message has been saved. We will get back to you soon. Goodbye!' },
+  es: { voice: 'Polly.Miguel',  text: 'Su mensaje ha sido guardado. Nos comunicaremos pronto con usted. ¡Hasta luego!' },
 };
 
 function formatPhone(e164: string): string {

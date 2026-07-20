@@ -14,7 +14,7 @@ function twiml(xml: string) {
 
 const COPY = {
   en: {
-    voice: 'en-US',
+    voice: 'Polly.Matthew',
     book: `Visit ${SITE_DISPLAY} to book your appointment online. A text message with the link has been sent to your phone.`,
     bookSms: `Book your appointment at ${SITE_URL_TEXT}`,
     bookBye: 'Thank you. Goodbye!',
@@ -24,7 +24,7 @@ const COPY = {
     retry: 'I did not understand your selection.',
   },
   es: {
-    voice: 'es-MX',
+    voice: 'Polly.Miguel',
     book: `Visite ${SITE_DISPLAY} para agendar su cita en línea. Se ha enviado un mensaje de texto con el enlace a su teléfono.`,
     bookSms: `Agende su cita en ${SITE_URL_TEXT}`,
     bookBye: '¡Gracias! ¡Hasta luego!',

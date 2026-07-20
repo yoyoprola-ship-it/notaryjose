@@ -10,14 +10,8 @@ function twiml(xml: string) {
 }
 
 const MENU = {
-  en: {
-    lang: 'en-US',
-    text: 'Press 1 to book an appointment. Press 2 to leave a voice consultation.',
-  },
-  es: {
-    lang: 'es-MX',
-    text: 'Marque uno para agendar una cita. Marque dos para dejar una consulta de voz.',
-  },
+  en: { voice: 'Polly.Matthew', text: 'Press 1 to book an appointment. Press 2 to leave a voice consultation.' },
+  es: { voice: 'Polly.Miguel',  text: 'Marque uno para agendar una cita. Marque dos para dejar una consulta de voz.' },
 };
 
 export async function POST(request: NextRequest) {
@@ -38,7 +32,7 @@ export async function POST(request: NextRequest) {
   return twiml(`
 <Response>
   <Gather numDigits="1" action="${BASE}/api/twilio/voice/action?lang=${lang}" method="POST" timeout="8">
-    <Say language="${m.lang}">${m.text}</Say>
+    <Say voice="${m.voice}">${m.text}</Say>
   </Gather>
   <Redirect>${BASE}/api/twilio/voice/welcome</Redirect>
 </Response>`);

@@ -23,10 +23,14 @@ export async function POST(request: NextRequest) {
 
   return twiml(`
 <Response>
-  <Gather numDigits="1" action="${BASE}/api/twilio/voice/lang-select" method="POST" timeout="8">
-    <Say language="en-US">Press 1 for English.</Say>
+  <Gather numDigits="1" action="${BASE}/api/twilio/voice/lang-select" method="POST" timeout="10">
+    <Say voice="Polly.Matthew">Thank you for calling. I am Jose Garcia, notary public in Lafayette, Louisiana.</Say>
     <Pause length="1"/>
-    <Say language="es-MX">Para español, marque dos.</Say>
+    <Say voice="Polly.Miguel">Gracias por llamar. Soy Jose Garcia, notario público en Lafayette, Luisiana.</Say>
+    <Pause length="1"/>
+    <Say voice="Polly.Matthew">Press 1 for English.</Say>
+    <Pause length="1"/>
+    <Say voice="Polly.Miguel">Para español, marque dos.</Say>
   </Gather>
   <Redirect>${BASE}/api/twilio/voice/welcome</Redirect>
 </Response>`);
