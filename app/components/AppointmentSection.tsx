@@ -232,15 +232,10 @@ export default function AppointmentSection({ lang }: Props) {
               <p className="text-base font-black text-slate-900 capitalize">{monthLabel}</p>
               {/* Legend */}
               <div className="flex gap-3">
-                {[
-                  { color: 'bg-green-100 border-green-300', label: t.labels.available },
-                  { color: 'bg-stone-100 border-stone-300', label: t.labels.closed },
-                ].map(({ color, label }) => (
-                  <span key={label} className="flex items-center gap-1 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-                    <span className={`w-2.5 h-2.5 rounded-sm border inline-block ${color}`} />
-                    {label}
-                  </span>
-                ))}
+                <span className="flex items-center gap-1 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                  <span className="w-2.5 h-2.5 rounded-sm border inline-block bg-green-100 border-green-300" />
+                  {t.labels.available}
+                </span>
               </div>
             </div>
 
@@ -300,7 +295,7 @@ export default function AppointmentSection({ lang }: Props) {
                     {formatDateShort(selectedDate!)} — {t.pickHour}
                   </p>
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                    {selectedDay.hours.map((h) => {
+                    {selectedDay.hours.filter((h) => h.available || h.reason === 'booked').map((h) => {
                       const isBooked = !h.available && h.reason === 'booked';
                       const btnCls = h.available
                         ? 'border-green-300 bg-green-50 hover:border-green-500 hover:shadow-sm cursor-pointer'
