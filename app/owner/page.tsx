@@ -77,13 +77,9 @@ export default function OwnerDashboard() {
       {stats && (
         <>
           <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Monthly activity</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
             <MonthCard m={stats.current} accent />
             <MonthCard m={stats.previous} />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-            <BillingCard m={stats.current} accent />
-            <BillingCard m={stats.previous} />
           </div>
         </>
       )}
