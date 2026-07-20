@@ -39,7 +39,7 @@ export interface AppointmentCopy {
 export const APPT_COPY: Record<Lang, AppointmentCopy> = {
   en: {
     title: 'Book an appointment',
-    subtitle: 'Pick a day and hour. One hour per slot, 8 AM to 8 PM.',
+    subtitle: 'Pick a day and hour. One hour per slot.',
     pickDay: 'Choose a day',
     pickHour: 'Choose a time',
     loading: 'Loading slots…',
@@ -80,7 +80,7 @@ export const APPT_COPY: Record<Lang, AppointmentCopy> = {
   },
   es: {
     title: 'Agendar una cita',
-    subtitle: 'Elegí día y hora. Un turno por hora, de 8 AM a 8 PM.',
+    subtitle: 'Elegí día y hora. Un turno por hora.',
     pickDay: 'Elegí un día',
     pickHour: 'Elegí una hora',
     loading: 'Cargando…',
