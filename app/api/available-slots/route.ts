@@ -49,21 +49,22 @@ export async function GET(request: NextRequest) {
     // Candidatos: hoy + 13 días. Después filtramos a TARGET_DAYS válidos.
     const candidates = next7DaysCT(LOOKAHEAD_DAYS);
 
-    // Bookings confirmed en el rango de candidatos. Range query evita el
-    // límite de 30 items del operador `in`.
+    // Range query evita el límite de 30 items del operador `in`.
+    // Filtramos status=confirmed en JS para no requerir índice compuesto.
     const bookingSnap = await adminDb
       .collection('notaryjose_bookings')
       .where('slotDate', '>=', candidates[0])
       .where('slotDate', '<=', candidates[candidates.length - 1])
-      .where('status', '==', 'confirmed')
       .get();
 
     const bookedSet = new Set<string>();
     bookingSnap.docs.forEach((d) => {
       const data = d.data();
-      bookedSet.add(
-        `${data.slotDate}T${String(data.slotHour).padStart(2, '0')}`
-      );
+      if (data.status === 'confirmed') {
+        bookedSet.add(
+          `${data.slotDate}T${String(data.slotHour).padStart(2, '0')}`
+        );
+      }
     });
 
     const out: DayResponse[] = [];
