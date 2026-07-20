@@ -29,15 +29,18 @@ interface TwilioCallRecord { direction: string; duration: string }
 async function getTwilioCallMinutes(startDate: string, endDate: string): Promise<number> {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
   const authToken  = process.env.TWILIO_AUTH_TOKEN;
-  if (!accountSid || !authToken) return 0;
+  const rawPhone   = process.env.TWILIO_VOICE_NUMBER ?? process.env.TWILIO_PHONE_NUMBER ?? '';
+  if (!accountSid || !authToken || !rawPhone) return 0;
 
-  const creds = Buffer.from(`${accountSid}:${authToken}`).toString('base64');
+  const digits = rawPhone.replace(/\D/g, '');
+  const phone  = digits.length === 10 ? `+1${digits}` : `+${digits}`;
+  const creds  = Buffer.from(`${accountSid}:${authToken}`).toString('base64');
 
   let totalSeconds = 0;
   // Twilio query key syntax: "StartTime>=" splits as key="StartTime>" value=date
   let pageUrl: string | null =
     `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Calls.json` +
-    `?StartTime>=${startDate}&StartTime<=${endDate}&PageSize=100`;
+    `?To=${encodeURIComponent(phone)}&StartTime>=${startDate}&StartTime<=${endDate}&PageSize=100`;
 
   try {
     while (pageUrl) {
