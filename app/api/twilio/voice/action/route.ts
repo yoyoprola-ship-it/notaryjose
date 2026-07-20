@@ -1,4 +1,6 @@
 import { NextRequest } from 'next/server';
+import { FieldValue } from 'firebase-admin/firestore';
+import { adminDb } from '@/app/lib/firebaseAdmin';
 import { validateTwilioSignature } from '@/app/lib/validateTwilio';
 import { sendSms } from '@/app/lib/twilioSms';
 
@@ -51,6 +53,16 @@ export async function POST(request: NextRequest) {
   const digits = params.Digits;
   const callerE164 = params.From ?? '';
   const t = COPY[lang];
+
+  // Track engaged calls (chose option 1 or 2) — deduped by CallSid
+  if ((digits === '1' || digits === '2') && params.CallSid) {
+    void adminDb.collection('notaryjose_calls').doc(params.CallSid).create({
+      callerPhone: callerE164,
+      callSid: params.CallSid,
+      action: digits === '1' ? 'book' : 'consult',
+      createdAt: FieldValue.serverTimestamp(),
+    }).catch(() => {});
+  }
 
   // Option 1: Book appointment
   if (digits === '1') {
