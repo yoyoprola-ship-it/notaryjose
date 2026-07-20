@@ -27,6 +27,8 @@ export interface Booking {
   cancelledBy?: 'user' | 'owner' | 'admin';
   createdAt?: FirestoreTimestampish;
   cancelledAt?: FirestoreTimestampish;
+  reminder8amSent?: boolean;
+  reminder1hSent?: boolean;
 }
 
 // ─── Working hours ───────────────────────────────────────────
