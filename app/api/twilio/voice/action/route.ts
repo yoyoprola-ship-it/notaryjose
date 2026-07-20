@@ -59,9 +59,9 @@ export async function POST(request: NextRequest) {
 
     return twiml(`
 <Response>
-  <Say language="${t.voice}">${t.book}</Say>
+  <Say voice="${t.voice}">${t.book}</Say>
   <Pause length="1"/>
-  <Say language="${t.voice}">${t.bookBye}</Say>
+  <Say voice="${t.voice}">${t.bookBye}</Say>
   <Hangup/>
 </Response>`);
   }
@@ -70,9 +70,9 @@ export async function POST(request: NextRequest) {
   if (digits === '2') {
     return twiml(`
 <Response>
-  <Say language="${t.voice}">${t.consult}</Say>
+  <Say voice="${t.voice}">${t.consult}</Say>
   <Record action="${BASE}/api/twilio/voice/consult-done?lang=${lang}" method="POST" maxLength="120" finishOnKey="#" playBeep="true" timeout="5"/>
-  <Say language="${t.voice}">${t.consultNoRec}</Say>
+  <Say voice="${t.voice}">${t.consultNoRec}</Say>
   <Hangup/>
 </Response>`);
   }
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
   // Unrecognized digit — back to menu
   return twiml(`
 <Response>
-  <Say language="${t.voice}">${t.retry}</Say>
+  <Say voice="${t.voice}">${t.retry}</Say>
   <Redirect>${BASE}/api/twilio/voice/lang-select</Redirect>
 </Response>`);
 }
