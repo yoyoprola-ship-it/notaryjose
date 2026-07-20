@@ -7,7 +7,7 @@ import { auth } from '@/app/lib/firebase';
 import type { Booking } from '@/app/types';
 import { ctDateStr, next7DaysCT } from '@/app/lib/timeSlots';
 
-interface MonthStats { label: string; bookings: number; calls: number; consults: number; minutes: number }
+interface MonthStats { label: string; bookings: number; calls: number; consults: number; minutes: number; dueDate: string }
 
 export default function AdminDashboard() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -74,9 +74,14 @@ export default function AdminDashboard() {
       {stats && (
         <>
           <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Monthly activity</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <MonthCard m={stats.current} accent />
             <MonthCard m={stats.previous} />
+          </div>
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Revenue</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+            <BillingCard m={stats.current} accent />
+            <BillingCard m={stats.previous} />
           </div>
         </>
       )}
@@ -130,6 +135,39 @@ function MonthCard({ m, accent }: { m: MonthStats; accent?: boolean }) {
           <p className="text-2xl font-black text-slate-900">{m.minutes}</p>
         </div>
       </div>
+    </div>
+  );
+}
+
+function BillingCard({ m, accent }: { m: MonthStats; accent?: boolean }) {
+  const bookingFee = m.bookings * 0.85;
+  const minutesFee = m.minutes * 0.92;
+  const total = bookingFee + minutesFee;
+  const due = new Date(m.dueDate + 'T12:00:00');
+  const isPast = due < new Date();
+  const dueLabel = due.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return (
+    <div className={`p-5 rounded border ${accent ? 'border-amber-300 bg-amber-50' : 'border-stone-200 bg-white'}`}>
+      <p className={`text-sm font-black uppercase tracking-wide mb-4 ${accent ? 'text-amber-800' : 'text-slate-500'}`}>
+        {m.label} — Revenue
+      </p>
+      <div className="space-y-2 mb-4 text-sm">
+        <div className="flex justify-between">
+          <span className="text-slate-600">{m.bookings} bookings × $0.85</span>
+          <span className="font-bold">${bookingFee.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-slate-600">{m.minutes} min × $0.92</span>
+          <span className="font-bold">${minutesFee.toFixed(2)}</span>
+        </div>
+        <div className="border-t border-stone-200 pt-2 flex justify-between items-baseline">
+          <span className="font-black text-slate-900">Total</span>
+          <span className="text-2xl font-black text-slate-900">${total.toFixed(2)}</span>
+        </div>
+      </div>
+      <p className={`text-xs font-bold ${isPast ? 'text-slate-400' : 'text-amber-700'}`}>
+        {isPast ? `Payment was due ${dueLabel}` : `Payment due before ${dueLabel}`}
+      </p>
     </div>
   );
 }

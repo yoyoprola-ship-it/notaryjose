@@ -12,9 +12,11 @@ function monthBounds(offset: 0 | -1) {
   const label = new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric' })
     .format(new Date(y, m, 1));
   const startStr = `${y}-${String(m + 1).padStart(2, '0')}-01`;
-  const endDate  = new Date(y, m + 1, 0); // last day of month
-  const endStr   = endDate.toISOString().slice(0, 10);
-  return { start, end, label, startStr, endStr };
+  const endStr   = new Date(y, m + 1, 0).toISOString().slice(0, 10);
+  // Payment due before the 5th of the month following this period
+  const dueD = new Date(y, m + 2, 5);
+  const dueDate = `${dueD.getFullYear()}-${String(dueD.getMonth() + 1).padStart(2, '0')}-05`;
+  return { start, end, label, startStr, endStr, dueDate };
 }
 
 async function countBetween(col: string, start: Timestamp, end: Timestamp): Promise<number> {
@@ -86,7 +88,7 @@ export async function GET(request: NextRequest) {
   ]);
 
   return NextResponse.json({
-    current:  { label: cur.label,  bookings: bookingsCur,  calls: twiliocur.calls,  consults: consultsCur,  minutes: twiliocur.minutes  },
-    previous: { label: prev.label, bookings: bookingsPrev, calls: twilioprev.calls, consults: consultsPrev, minutes: twilioprev.minutes },
+    current:  { label: cur.label,  bookings: bookingsCur,  calls: twiliocur.calls,  consults: consultsCur,  minutes: twiliocur.minutes,  dueDate: cur.dueDate  },
+    previous: { label: prev.label, bookings: bookingsPrev, calls: twilioprev.calls, consults: consultsPrev, minutes: twilioprev.minutes, dueDate: prev.dueDate },
   });
 }
