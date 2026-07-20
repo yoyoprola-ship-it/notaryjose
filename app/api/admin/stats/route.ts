@@ -26,17 +26,18 @@ async function countBetween(col: string, start: Timestamp, end: Timestamp): Prom
 
 interface TwilioCallRecord { direction: string; duration: string }
 
-async function getTwilioCallMinutes(startDate: string, endDate: string): Promise<number> {
+async function getTwilioStats(startDate: string, endDate: string): Promise<{ calls: number; minutes: number }> {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
   const authToken  = process.env.TWILIO_AUTH_TOKEN;
   const rawPhone   = process.env.TWILIO_VOICE_NUMBER ?? process.env.TWILIO_PHONE_NUMBER ?? '';
-  if (!accountSid || !authToken || !rawPhone) return 0;
+  if (!accountSid || !authToken || !rawPhone) return { calls: 0, minutes: 0 };
 
   const digits = rawPhone.replace(/\D/g, '');
   const phone  = digits.length === 10 ? `+1${digits}` : `+${digits}`;
   const creds  = Buffer.from(`${accountSid}:${authToken}`).toString('base64');
 
   let totalSeconds = 0;
+  let totalCalls = 0;
   // Twilio query key syntax: "StartTime>=" splits as key="StartTime>" value=date
   let pageUrl: string | null =
     `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Calls.json` +
@@ -49,16 +50,17 @@ async function getTwilioCallMinutes(startDate: string, endDate: string): Promise
       const data = await res.json() as { calls?: TwilioCallRecord[]; next_page_uri?: string | null };
       for (const call of data.calls ?? []) {
         if (call.direction === 'inbound') {
+          totalCalls++;
           totalSeconds += parseInt(call.duration ?? '0', 10);
         }
       }
       pageUrl = data.next_page_uri ? `https://api.twilio.com${data.next_page_uri}` : null;
     }
   } catch {
-    return 0;
+    return { calls: 0, minutes: 0 };
   }
 
-  return Math.round((totalSeconds / 60) * 10) / 10;
+  return { calls: totalCalls, minutes: Math.round((totalSeconds / 60) * 10) / 10 };
 }
 
 export async function GET(request: NextRequest) {
@@ -81,22 +83,19 @@ export async function GET(request: NextRequest) {
 
   const [
     bookingsCur, bookingsPrev,
-    callsCur, callsPrev,
     consultsCur, consultsPrev,
-    minutesCur, minutesPrev,
+    twiliocur, twilioprev,
   ] = await Promise.all([
     countBetween('notaryjose_bookings',      cur.start,  cur.end),
     countBetween('notaryjose_bookings',      prev.start, prev.end),
-    countBetween('notaryjose_calls',         cur.start,  cur.end),
-    countBetween('notaryjose_calls',         prev.start, prev.end),
     countBetween('notaryjose_consultations', cur.start,  cur.end),
     countBetween('notaryjose_consultations', prev.start, prev.end),
-    getTwilioCallMinutes(cur.startStr,  cur.endStr),
-    getTwilioCallMinutes(prev.startStr, prev.endStr),
+    getTwilioStats(cur.startStr,  cur.endStr),
+    getTwilioStats(prev.startStr, prev.endStr),
   ]);
 
   return NextResponse.json({
-    current:  { label: cur.label,  bookings: bookingsCur,  calls: callsCur,  consults: consultsCur,  minutes: minutesCur  },
-    previous: { label: prev.label, bookings: bookingsPrev, calls: callsPrev, consults: consultsPrev, minutes: minutesPrev },
+    current:  { label: cur.label,  bookings: bookingsCur,  calls: twiliocur.calls,  consults: consultsCur,  minutes: twiliocur.minutes  },
+    previous: { label: prev.label, bookings: bookingsPrev, calls: twilioprev.calls, consults: consultsPrev, minutes: twilioprev.minutes },
   });
 }
