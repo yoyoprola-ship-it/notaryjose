@@ -20,6 +20,8 @@ interface CopyBlock {
   };
   servicesTitle: string;
   services: { icon: string; title: string; desc: string }[];
+  locationTitle: string;
+  directions: string;
   footer: string;
 }
 
@@ -77,6 +79,8 @@ const COPY: { en: CopyBlock; es: CopyBlock } = {
         desc: 'Scheduling assistance and full document preparation for consular appointments.',
       },
     ],
+    locationTitle: 'Location',
+    directions: 'Get directions',
     footer: 'Notary services in Lafayette, LA · English and Spanish',
   },
   es: {
@@ -132,6 +136,8 @@ const COPY: { en: CopyBlock; es: CopyBlock } = {
         desc: 'Asistencia con el agendamiento y preparación completa de documentos para citas consulares.',
       },
     ],
+    locationTitle: 'Ubicación',
+    directions: 'Cómo llegar',
     footer: 'Servicios notariales en Lafayette, LA · Inglés y español',
   },
 };
@@ -149,6 +155,7 @@ export default function LandingPage() {
       <ServicesGrid t={t} />
       <AppointmentSection lang={lang} />
       <CancelSection lang={lang} />
+      <LocationSection t={t} />
       <Footer t={t} />
     </main>
   );
@@ -273,6 +280,41 @@ function ServicesGrid({ t }: { t: CopyBlock }) {
               </p>
             </div>
           ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function LocationSection({ t }: { t: CopyBlock }) {
+  return (
+    <section className="px-6 py-16 bg-white border-t border-stone-200">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-6">
+          <p className="text-xs font-bold uppercase tracking-[0.25em] text-amber-700 mb-2">—</p>
+          <h2 className="text-3xl font-black tracking-tight text-slate-900">{t.locationTitle}</h2>
+          <p className="text-slate-600 mt-2">100 Eva Dr, Lafayette, LA 70508</p>
+        </div>
+        <div className="rounded-xl overflow-hidden border border-stone-200 shadow-sm">
+          <iframe
+            title="Notary Jose location"
+            src="https://maps.google.com/maps?q=100+Eva+Dr+Lafayette+LA+70508&output=embed&z=15"
+            width="100%"
+            height="380"
+            style={{ border: 0 }}
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
+        </div>
+        <div className="mt-4">
+          <a
+            href="https://www.google.com/maps/dir/?api=1&destination=100+Eva+Dr+Lafayette+LA+70508"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-sm font-bold text-amber-800 hover:text-amber-900"
+          >
+            {t.directions} →
+          </a>
         </div>
       </div>
     </section>
