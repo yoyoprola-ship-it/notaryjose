@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
   const b = BYE[lang];
   return twiml(`
 <Response>
-  <Say language="${b.voice}">${b.text}</Say>
+  <Say voice="${b.voice}">${b.text}</Say>
   <Hangup/>
 </Response>`);
 }
