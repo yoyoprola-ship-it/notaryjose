@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { validateTwilioSignature } from '@/app/lib/validateTwilio';
+import { getIvrConfig } from '@/app/lib/ivrConfig';
 
 const BASE = process.env.SITE_URL ?? 'https://notaryjose.lafayettelamarket.com';
 
@@ -21,16 +22,18 @@ export async function POST(request: NextRequest) {
     return new Response('Forbidden', { status: 403 });
   }
 
+  const cfg = await getIvrConfig();
+
   return twiml(`
 <Response>
   <Gather numDigits="1" action="${BASE}/api/twilio/voice/lang-select" method="POST" timeout="10">
-    <Say voice="Polly.Matthew">Thank you for calling. I am Jose Garcia, notary public in Lafayette, Louisiana.</Say>
+    <Say voice="${cfg.voices.en}">${cfg.intro.en}</Say>
     <Pause length="1"/>
-    <Say voice="Polly.Miguel">Gracias por llamar. Soy Jose Garcia, notario público en Lafayette, Luisiana.</Say>
+    <Say voice="${cfg.voices.es}">${cfg.intro.es}</Say>
     <Pause length="1"/>
-    <Say voice="Polly.Matthew">Press 1 for English.</Say>
+    <Say voice="${cfg.voices.en}">${cfg.langPrompt.en}</Say>
     <Pause length="1"/>
-    <Say voice="Polly.Miguel">Para español, marque dos.</Say>
+    <Say voice="${cfg.voices.es}">${cfg.langPrompt.es}</Say>
   </Gather>
   <Redirect>${BASE}/api/twilio/voice/welcome</Redirect>
 </Response>`);

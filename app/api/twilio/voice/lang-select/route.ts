@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { validateTwilioSignature } from '@/app/lib/validateTwilio';
+import { getIvrConfig } from '@/app/lib/ivrConfig';
 
 const BASE = process.env.SITE_URL ?? 'https://notaryjose.lafayettelamarket.com';
 
@@ -8,11 +9,6 @@ function twiml(xml: string) {
     headers: { 'Content-Type': 'text/xml' },
   });
 }
-
-const MENU = {
-  en: { voice: 'Polly.Matthew', text: 'Press 1 to book an appointment. Press 2 to leave a voice consultation.' },
-  es: { voice: 'Polly.Miguel',  text: 'Marque uno para agendar una cita. Marque dos para dejar una consulta de voz.' },
-};
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
@@ -27,12 +23,12 @@ export async function POST(request: NextRequest) {
   }
 
   const lang = params.Digits === '2' ? 'es' : 'en';
-  const m = MENU[lang];
+  const cfg = await getIvrConfig();
 
   return twiml(`
 <Response>
   <Gather numDigits="1" action="${BASE}/api/twilio/voice/action?lang=${lang}" method="POST" timeout="8">
-    <Say voice="${m.voice}">${m.text}</Say>
+    <Say voice="${cfg.voices[lang]}">${cfg.menu[lang]}</Say>
   </Gather>
   <Redirect>${BASE}/api/twilio/voice/welcome</Redirect>
 </Response>`);

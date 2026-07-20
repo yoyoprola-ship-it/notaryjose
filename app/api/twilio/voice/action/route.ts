@@ -3,9 +3,9 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { adminDb } from '@/app/lib/firebaseAdmin';
 import { validateTwilioSignature } from '@/app/lib/validateTwilio';
 import { sendSms } from '@/app/lib/twilioSms';
+import { getIvrConfig } from '@/app/lib/ivrConfig';
 
 const BASE = process.env.SITE_URL ?? 'https://notaryjose.lafayettelamarket.com';
-const SITE_DISPLAY = 'notaryjose dot lafayettelamarket dot com';
 const SITE_URL_TEXT = 'https://notaryjose.lafayettelamarket.com';
 
 function twiml(xml: string) {
@@ -14,27 +14,9 @@ function twiml(xml: string) {
   });
 }
 
-const COPY = {
-  en: {
-    voice: 'Polly.Matthew',
-    book: `Visit ${SITE_DISPLAY} to book your appointment online. A text message with the link has been sent to your phone.`,
-    bookSms: `Book your appointment at ${SITE_URL_TEXT}`,
-    bookBye: 'Thank you. Goodbye!',
-    consult: 'Please leave your message after the beep. Press pound when you are finished.',
-    consultNoRec: 'We did not receive a message. Please try again. Goodbye.',
-    consultBye: 'Your message has been saved. We will get back to you soon. Goodbye!',
-    retry: 'I did not understand your selection.',
-  },
-  es: {
-    voice: 'Polly.Miguel',
-    book: `Visite ${SITE_DISPLAY} para agendar su cita en línea. Se ha enviado un mensaje de texto con el enlace a su teléfono.`,
-    bookSms: `Agende su cita en ${SITE_URL_TEXT}`,
-    bookBye: '¡Gracias! ¡Hasta luego!',
-    consult: 'Por favor deje su mensaje después del tono. Presione numeral cuando haya terminado.',
-    consultNoRec: 'No recibimos su mensaje. Por favor intente de nuevo. Hasta luego.',
-    consultBye: 'Su mensaje ha sido guardado. Nos comunicaremos pronto con usted. ¡Hasta luego!',
-    retry: 'No entendí su selección.',
-  },
+const SMS_TEXT = {
+  en: `Book your appointment at ${SITE_URL_TEXT}`,
+  es: `Agende su cita en ${SITE_URL_TEXT}`,
 };
 
 export async function POST(request: NextRequest) {
@@ -52,7 +34,6 @@ export async function POST(request: NextRequest) {
 
   const digits = params.Digits;
   const callerE164 = params.From ?? '';
-  const t = COPY[lang];
 
   // Track engaged calls (chose option 1 or 2) — deduped by CallSid
   if ((digits === '1' || digits === '2') && params.CallSid) {
@@ -64,16 +45,17 @@ export async function POST(request: NextRequest) {
     }).catch(() => {});
   }
 
+  const cfg = await getIvrConfig();
+  const voice = cfg.voices[lang];
+
   // Option 1: Book appointment
   if (digits === '1') {
-    // Fire-and-forget SMS to caller
-    void sendSms(callerE164, t.bookSms);
-
+    void sendSms(callerE164, SMS_TEXT[lang]);
     return twiml(`
 <Response>
-  <Say voice="${t.voice}">${t.book}</Say>
+  <Say voice="${voice}">${cfg.bookConfirm[lang]}</Say>
   <Pause length="1"/>
-  <Say voice="${t.voice}">${t.bookBye}</Say>
+  <Say voice="${voice}">${cfg.bookBye[lang]}</Say>
   <Hangup/>
 </Response>`);
   }
@@ -82,9 +64,9 @@ export async function POST(request: NextRequest) {
   if (digits === '2') {
     return twiml(`
 <Response>
-  <Say voice="${t.voice}">${t.consult}</Say>
+  <Say voice="${voice}">${cfg.consultPrompt[lang]}</Say>
   <Record action="${BASE}/api/twilio/voice/consult-done?lang=${lang}" method="POST" maxLength="120" finishOnKey="#" playBeep="true" timeout="5"/>
-  <Say voice="${t.voice}">${t.consultNoRec}</Say>
+  <Say voice="${voice}">${cfg.consultNoRec[lang]}</Say>
   <Hangup/>
 </Response>`);
   }
@@ -92,7 +74,7 @@ export async function POST(request: NextRequest) {
   // Unrecognized digit — back to menu
   return twiml(`
 <Response>
-  <Say voice="${t.voice}">${t.retry}</Say>
+  <Say voice="${voice}">${cfg.retry[lang]}</Say>
   <Redirect>${BASE}/api/twilio/voice/lang-select</Redirect>
 </Response>`);
 }

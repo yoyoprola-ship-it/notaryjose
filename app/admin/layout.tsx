@@ -69,6 +69,7 @@ export default function AdminLayout({
     { href: '/admin', label: 'Dashboard' },
     { href: '/admin/bookings', label: 'Bookings' },
     { href: '/admin/hours', label: 'Hours' },
+    { href: '/admin/ivr', label: 'IVR' },
     { href: '/admin/billing', label: 'Billing' },
   ];
 

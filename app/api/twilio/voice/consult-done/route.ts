@@ -3,6 +3,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { adminDb } from '@/app/lib/firebaseAdmin';
 import { validateTwilioSignature } from '@/app/lib/validateTwilio';
 import { sendSms } from '@/app/lib/twilioSms';
+import { getIvrConfig } from '@/app/lib/ivrConfig';
 
 const BASE = process.env.SITE_URL ?? 'https://notaryjose.lafayettelamarket.com';
 
@@ -11,11 +12,6 @@ function twiml(xml: string) {
     headers: { 'Content-Type': 'text/xml' },
   });
 }
-
-const BYE = {
-  en: { voice: 'Polly.Matthew', text: 'Your message has been saved. We will get back to you soon. Goodbye!' },
-  es: { voice: 'Polly.Miguel',  text: 'Su mensaje ha sido guardado. Nos comunicaremos pronto con usted. ¡Hasta luego!' },
-};
 
 function formatPhone(e164: string): string {
   const d = e164.replace(/\D/g, '').slice(-10);
@@ -58,18 +54,17 @@ export async function POST(request: NextRequest) {
       const rawOwner = process.env.OWNER_PHONE ?? '';
       const digits = rawOwner.replace(/\D/g, '');
       const ownerE164 = digits.length === 10 ? `+1${digits}` : `+${digits}`;
-      const phone = formatPhone(callerE164);
       await sendSms(
         ownerE164,
-        `NotaryJose: nueva consulta de voz\n${phone}\nLang: ${lang.toUpperCase()}`,
+        `NotaryJose: nueva consulta de voz\n${formatPhone(callerE164)}\nLang: ${lang.toUpperCase()}`,
       );
     })(),
   ]);
 
-  const b = BYE[lang];
+  const cfg = await getIvrConfig();
   return twiml(`
 <Response>
-  <Say voice="${b.voice}">${b.text}</Say>
+  <Say voice="${cfg.voices[lang]}">${cfg.consultBye[lang]}</Say>
   <Hangup/>
 </Response>`);
 }
