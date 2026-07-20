@@ -1,21 +1,16 @@
 'use client';
 import { useState } from 'react';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from './lib/firebase';
 import AppointmentSection from './components/AppointmentSection';
 import CancelSection from './components/CancelSection';
 
 // Landing pública de Notary Jose. Portea la sección de la app original
 // (lafayette-market/app/services/providers/NotaryJose) como subdomain
 // propio. Bilingüe EN/ES — el switch está arriba a la derecha.
-//
-// El contact form guarda leads en `notaryjose_leads` (Firestore). El
-// admin va a ver esa lista desde /admin (Fase 2 después).
 
 // ─── Copy bilingüe ─────────────────────────────────────────────
 
 interface CopyBlock {
-  nav: { services: string; book: string; cancel: string; contact: string; language: string };
+  nav: { services: string; book: string; cancel: string; language: string };
   hero: {
     eyebrow: string;
     title: string;
@@ -25,27 +20,12 @@ interface CopyBlock {
   };
   servicesTitle: string;
   services: { icon: string; title: string; desc: string }[];
-  contactTitle: string;
-  contactSubtitle: string;
-  form: {
-    name: string;
-    email: string;
-    phone: string;
-    service: string;
-    message: string;
-    submit: string;
-    submitting: string;
-    success: string;
-    successBody: string;
-    error: string;
-    servicePlaceholder: string;
-  };
   footer: string;
 }
 
 const COPY: { en: CopyBlock; es: CopyBlock } = {
   en: {
-    nav: { services: 'Services', book: 'Book', cancel: 'Cancel appt', contact: 'Contact', language: 'ES' },
+    nav: { services: 'Services', book: 'Book', cancel: 'Cancel appt', language: 'ES' },
     hero: {
       eyebrow: 'Bilingual notary public — Lafayette, Louisiana',
       title: 'Jose E. Garcia',
@@ -97,27 +77,10 @@ const COPY: { en: CopyBlock; es: CopyBlock } = {
         desc: 'Scheduling assistance and full document preparation for consular appointments.',
       },
     ],
-    contactTitle: 'Get in touch',
-    contactSubtitle:
-      "Tell me what you need. I'll get back to you the same day.",
-    form: {
-      name: 'Your name',
-      email: 'Email',
-      phone: 'Phone',
-      service: 'What do you need?',
-      message: 'Tell me more (optional)',
-      submit: 'Send request',
-      submitting: 'Sending…',
-      success: 'Thanks — I got it.',
-      successBody:
-        "I'll reach out shortly to confirm details. If it's urgent, please call.",
-      error: 'Something went wrong. Please try again or call directly.',
-      servicePlaceholder: 'Pick a service…',
-    },
     footer: 'Notary services in Lafayette, LA · English and Spanish',
   },
   es: {
-    nav: { services: 'Servicios', book: 'Reservar', cancel: 'Cancelar cita', contact: 'Contacto', language: 'EN' },
+    nav: { services: 'Servicios', book: 'Reservar', cancel: 'Cancelar cita', language: 'EN' },
     hero: {
       eyebrow: 'Notario público bilingüe — Lafayette, Luisiana',
       title: 'Jose E. Garcia',
@@ -169,23 +132,6 @@ const COPY: { en: CopyBlock; es: CopyBlock } = {
         desc: 'Asistencia con el agendamiento y preparación completa de documentos para citas consulares.',
       },
     ],
-    contactTitle: 'Contacto',
-    contactSubtitle:
-      'Cuéntame qué necesitas. Te respondo el mismo día.',
-    form: {
-      name: 'Tu nombre',
-      email: 'Correo electrónico',
-      phone: 'Teléfono',
-      service: '¿Qué necesitas?',
-      message: 'Cuéntame más (opcional)',
-      submit: 'Enviar',
-      submitting: 'Enviando…',
-      success: 'Gracias — recibido.',
-      successBody:
-        'Te contacto pronto para confirmar detalles. Si es urgente, llámame por favor.',
-      error: 'Algo salió mal. Intenta de nuevo o llama directamente.',
-      servicePlaceholder: 'Elegí un servicio…',
-    },
     footer: 'Servicios notariales en Lafayette, LA · Inglés y español',
   },
 };
@@ -203,7 +149,6 @@ export default function LandingPage() {
       <ServicesGrid t={t} />
       <AppointmentSection lang={lang} />
       <CancelSection lang={lang} />
-      <ContactSection t={t} lang={lang} />
       <Footer t={t} />
     </main>
   );
@@ -248,12 +193,6 @@ function TopBar({
           >
             {t.nav.cancel}
           </a>
-          <a
-            href="#contact"
-            className="hidden sm:inline text-sm text-slate-600 hover:text-slate-900"
-          >
-            {t.nav.contact}
-          </a>
           <button
             onClick={onToggleLang}
             className="px-3 py-1 text-xs font-bold uppercase tracking-wider text-amber-800 border border-amber-300 hover:bg-amber-50 rounded"
@@ -271,12 +210,8 @@ function Hero({ t }: { t: CopyBlock }) {
   return (
     <section className="px-6 pt-16 pb-24 sm:pt-24">
       <div className="max-w-3xl mx-auto text-center">
-        {/* Foto — anillo dorado sugerente del sello notarial. Usamos
-            <img> nativo (no next/image) para que sea 100% self-hosted
-            del bundle y no dependa de un loader server-side; a 66KB
-            no vale la optimización. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <div className="mx-auto mb-8 w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden ring-4 ring-amber-700/40 ring-offset-4 ring-offset-stone-50 shadow-lg">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/jose.jpg"
             alt="Jose E. Garcia — Notary Public"
@@ -344,157 +279,6 @@ function ServicesGrid({ t }: { t: CopyBlock }) {
   );
 }
 
-function ContactSection({ t, lang }: { t: CopyBlock; lang: Lang }) {
-  const [form, setForm] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    service: '',
-    message: '',
-  });
-  const [status, setStatus] = useState<'idle' | 'sending' | 'ok' | 'error'>('idle');
-  const [error, setError] = useState('');
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (status === 'sending') return;
-    setError('');
-    const name = form.name.trim();
-    const email = form.email.trim().toLowerCase();
-    const phone = form.phone.replace(/\D/g, '');
-    if (name.length < 2) {
-      setError(t.form.error);
-      return;
-    }
-    // Al menos uno de email o phone debe ser válido
-    const hasEmail = email.includes('@') && email.includes('.');
-    const hasPhone = phone.length === 10;
-    if (!hasEmail && !hasPhone) {
-      setError(t.form.error);
-      return;
-    }
-    setStatus('sending');
-    try {
-      await addDoc(collection(db, 'notaryjose_leads'), {
-        name: name.slice(0, 80),
-        email: hasEmail ? email.slice(0, 200) : '',
-        phone: hasPhone ? phone : '',
-        service: form.service.slice(0, 60),
-        message: form.message.trim().slice(0, 2000),
-        language: lang,
-        createdAt: serverTimestamp(),
-        source: 'landing',
-        userAgent:
-          typeof navigator !== 'undefined'
-            ? navigator.userAgent.slice(0, 300)
-            : '',
-      });
-      setStatus('ok');
-    } catch (err) {
-      console.error('[notaryjose] lead failed:', err);
-      setStatus('error');
-      setError(t.form.error);
-    }
-  };
-
-  if (status === 'ok') {
-    return (
-      <section
-        id="contact"
-        className="px-6 py-20 bg-gradient-to-b from-stone-50 to-white"
-      >
-        <div className="max-w-md mx-auto text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-amber-100 flex items-center justify-center text-amber-800 text-3xl">
-            ✓
-          </div>
-          <h2 className="text-2xl font-black text-slate-900 mb-2">
-            {t.form.success}
-          </h2>
-          <p className="text-sm text-slate-600">{t.form.successBody}</p>
-        </div>
-      </section>
-    );
-  }
-
-  return (
-    <section
-      id="contact"
-      className="px-6 py-20 bg-gradient-to-b from-stone-50 to-white"
-    >
-      <div className="max-w-lg mx-auto">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 mb-2">
-            {t.contactTitle}
-          </h2>
-          <p className="text-sm text-slate-600">{t.contactSubtitle}</p>
-        </div>
-        <form
-          onSubmit={submit}
-          className="flex flex-col gap-4 bg-white border border-stone-200 rounded-lg p-6 shadow-sm"
-        >
-          <input
-            type="text"
-            autoComplete="name"
-            placeholder={t.form.name}
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            required
-            className={inputCls}
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <input
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              placeholder={t.form.email}
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className={inputCls}
-            />
-            <input
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel"
-              placeholder={t.form.phone}
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              className={inputCls}
-            />
-          </div>
-          <select
-            value={form.service}
-            onChange={(e) => setForm({ ...form, service: e.target.value })}
-            className={inputCls}
-          >
-            <option value="">{t.form.servicePlaceholder}</option>
-            {t.services.map((s) => (
-              <option key={s.title} value={s.title}>
-                {s.icon}  {s.title}
-              </option>
-            ))}
-          </select>
-          <textarea
-            rows={4}
-            maxLength={2000}
-            placeholder={t.form.message}
-            value={form.message}
-            onChange={(e) => setForm({ ...form, message: e.target.value })}
-            className={`${inputCls} resize-none`}
-          />
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <button
-            type="submit"
-            disabled={status === 'sending'}
-            className="px-6 py-3 bg-amber-800 hover:bg-amber-900 disabled:opacity-60 text-white font-bold rounded"
-          >
-            {status === 'sending' ? t.form.submitting : t.form.submit}
-          </button>
-        </form>
-      </div>
-    </section>
-  );
-}
-
 function Footer({ t }: { t: CopyBlock }) {
   return (
     <footer className="border-t border-stone-200 py-6 text-center bg-white">
@@ -510,6 +294,3 @@ function Footer({ t }: { t: CopyBlock }) {
     </footer>
   );
 }
-
-const inputCls =
-  'w-full px-4 py-3 border border-stone-300 bg-white rounded text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-amber-700 focus:ring-1 focus:ring-amber-700 transition';
