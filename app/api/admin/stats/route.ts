@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Timestamp } from 'firebase-admin/firestore';
-import { adminDb } from '@/app/lib/firebaseAdmin';
-import { requireOwner } from '@/app/lib/ownerApiAuth';
+import { adminAuth, adminDb } from '@/app/lib/firebaseAdmin';
 
 function monthBounds(offset: 0 | -1) {
   const now = new Date();
@@ -12,8 +11,7 @@ function monthBounds(offset: 0 | -1) {
   const label = new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric' })
     .format(new Date(y, m, 1));
   const startStr = `${y}-${String(m + 1).padStart(2, '0')}-01`;
-  const endDate  = new Date(y, m + 1, 0); // last day of month
-  const endStr   = endDate.toISOString().slice(0, 10);
+  const endStr   = new Date(y, m + 1, 0).toISOString().slice(0, 10);
   return { start, end, label, startStr, endStr };
 }
 
@@ -51,8 +49,19 @@ async function getTwilioMinutes(startDate: string, endDate: string): Promise<num
 }
 
 export async function GET(request: NextRequest) {
-  const auth = await requireOwner(request);
-  if (!auth.ok) return auth.response;
+  const authHeader = request.headers.get('Authorization') ?? '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  try {
+    const decoded = await adminAuth.verifyIdToken(token, true);
+    const snap = await adminDb.collection('users').doc(decoded.uid).get();
+    if (!snap.exists || (snap.data() as { role?: string })?.role !== 'admin') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+  } catch {
+    return NextResponse.json({ error: 'Auth error' }, { status: 401 });
+  }
 
   const cur  = monthBounds(0);
   const prev = monthBounds(-1);

@@ -1,32 +1,13 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/app/lib/firebase';
+import { auth } from '@/app/lib/firebase';
 import type { Booking } from '@/app/types';
 import { ctDateStr, next7DaysCT } from '@/app/lib/timeSlots';
 
-interface MonthStats { label: string; bookings: number; calls: number; consults: number }
-
-function monthBounds(offset: 0 | -1) {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = now.getMonth() + offset;
-  return {
-    start: Timestamp.fromDate(new Date(y, m, 1)),
-    end:   Timestamp.fromDate(new Date(y, m + 1, 1)),
-    label: new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric' }).format(new Date(y, m, 1)),
-  };
-}
-
-async function countCol(col: string, start: Timestamp, end: Timestamp): Promise<number> {
-  const snap = await getDocs(query(
-    collection(db, col),
-    where('createdAt', '>=', start),
-    where('createdAt', '<', end),
-  ));
-  return snap.size;
-}
+interface MonthStats { label: string; bookings: number; calls: number; consults: number; minutes: number }
 
 export default function AdminDashboard() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -37,29 +18,24 @@ export default function AdminDashboard() {
     (async () => {
       try {
         const dates = next7DaysCT(7);
-        const cur  = monthBounds(0);
-        const prev = monthBounds(-1);
+        const token = await auth.currentUser?.getIdToken();
 
-        const [bookingSnap, ...counts] = await Promise.all([
+        const [bookingSnap, statsRes] = await Promise.all([
           getDocs(query(
             collection(db, 'notaryjose_bookings'),
             where('slotDate', 'in', dates),
             where('status', '==', 'confirmed'),
           )),
-          countCol('notaryjose_bookings',      cur.start,  cur.end),
-          countCol('notaryjose_bookings',      prev.start, prev.end),
-          countCol('notaryjose_calls',         cur.start,  cur.end),
-          countCol('notaryjose_calls',         prev.start, prev.end),
-          countCol('notaryjose_consultations', cur.start,  cur.end),
-          countCol('notaryjose_consultations', prev.start, prev.end),
+          token
+            ? fetch('/api/admin/stats', { headers: { Authorization: `Bearer ${token}` } })
+            : Promise.resolve(null),
         ]);
 
         setBookings(bookingSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Booking));
-        const [bCur, bPrev, cCur, cPrev, conCur, conPrev] = counts as number[];
-        setStats({
-          current:  { label: cur.label,  bookings: bCur,  calls: cCur,  consults: conCur  },
-          previous: { label: prev.label, bookings: bPrev, calls: cPrev, consults: conPrev },
-        });
+        if (statsRes?.ok) {
+          const data = await statsRes.json();
+          setStats(data as { current: MonthStats; previous: MonthStats });
+        }
       } catch (err) {
         console.error('[admin] dashboard load failed:', err);
       } finally {
@@ -136,7 +112,7 @@ function MonthCard({ m, accent }: { m: MonthStats; accent?: boolean }) {
       <p className={`text-sm font-black uppercase tracking-wide mb-4 ${accent ? 'text-amber-800' : 'text-slate-500'}`}>
         {m.label}
       </p>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Bookings</p>
           <p className="text-2xl font-black text-slate-900">{m.bookings}</p>
@@ -148,6 +124,10 @@ function MonthCard({ m, accent }: { m: MonthStats; accent?: boolean }) {
         <div>
           <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Consults</p>
           <p className="text-2xl font-black text-slate-900">{m.consults}</p>
+        </div>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Minutes</p>
+          <p className="text-2xl font-black text-slate-900">{m.minutes}</p>
         </div>
       </div>
     </div>

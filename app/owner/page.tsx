@@ -5,7 +5,7 @@ import { auth } from '@/app/lib/firebase';
 import type { Booking } from '@/app/types';
 import { ctDateStr, next7DaysCT } from '@/app/lib/timeSlots';
 
-interface MonthStats { label: string; bookings: number; calls: number; consults: number }
+interface MonthStats { label: string; bookings: number; calls: number; consults: number; minutes: number }
 interface Stats { current: MonthStats; previous: MonthStats }
 
 export default function OwnerDashboard() {
@@ -105,7 +105,7 @@ function MonthCard({ m, accent }: { m: MonthStats; accent?: boolean }) {
       <p className={`text-sm font-black uppercase tracking-wide mb-4 ${accent ? 'text-amber-800' : 'text-slate-500'}`}>
         {m.label}
       </p>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Bookings</p>
           <p className="text-2xl font-black text-slate-900">{m.bookings}</p>
@@ -117,6 +117,10 @@ function MonthCard({ m, accent }: { m: MonthStats; accent?: boolean }) {
         <div>
           <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Consults</p>
           <p className="text-2xl font-black text-slate-900">{m.consults}</p>
+        </div>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Minutes</p>
+          <p className="text-2xl font-black text-slate-900">{m.minutes}</p>
         </div>
       </div>
     </div>
