@@ -30,8 +30,8 @@ interface DayResponse {
   }[];
 }
 
-const TARGET_DAYS = 7;
-const LOOKAHEAD_DAYS = 14; // buffer para saltar days fully past/closed
+const TARGET_DAYS = 30;
+const LOOKAHEAD_DAYS = 45; // buffer para saltar days fully past/closed
 
 export async function GET(request: NextRequest) {
   const ip = getClientIp(request.headers);
@@ -49,10 +49,12 @@ export async function GET(request: NextRequest) {
     // Candidatos: hoy + 13 días. Después filtramos a TARGET_DAYS válidos.
     const candidates = next7DaysCT(LOOKAHEAD_DAYS);
 
-    // Bookings confirmed de los candidatos. Firestore `in` acepta ≤30.
+    // Bookings confirmed en el rango de candidatos. Range query evita el
+    // límite de 30 items del operador `in`.
     const bookingSnap = await adminDb
       .collection('notaryjose_bookings')
-      .where('slotDate', 'in', candidates)
+      .where('slotDate', '>=', candidates[0])
+      .where('slotDate', '<=', candidates[candidates.length - 1])
       .where('status', '==', 'confirmed')
       .get();
 

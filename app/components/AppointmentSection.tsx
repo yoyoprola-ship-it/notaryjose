@@ -168,28 +168,33 @@ export default function AppointmentSection({ lang }: Props) {
     [days]
   );
 
-  // Current month in CT timezone
+  // 30-day rolling window starting from today in CT
   const todayCT = ctDateStr();
-  const todayYear = parseInt(todayCT.slice(0, 4), 10);
-  const todayMonth = parseInt(todayCT.slice(5, 7), 10);
+  const todayY = parseInt(todayCT.slice(0, 4), 10);
+  const todayM = parseInt(todayCT.slice(5, 7), 10);
+  const todayD = parseInt(todayCT.slice(8, 10), 10);
 
-  // Build calendar grid cells for the current month
   const calendarCells = useMemo(() => {
-    const firstDow = new Date(todayYear, todayMonth - 1, 1).getDay(); // 0=Sun
-    const daysInMonth = new Date(todayYear, todayMonth, 0).getDate();
+    const anchor = new Date(todayY, todayM - 1, todayD);
     const cells: Array<{ day: number; date: string } | null> = [];
-    for (let i = 0; i < firstDow; i++) cells.push(null);
-    for (let d = 1; d <= daysInMonth; d++) {
-      const date = `${todayYear}-${String(todayMonth).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      cells.push({ day: d, date });
+    // Blank offset so today aligns to its day-of-week column
+    for (let i = 0; i < anchor.getDay(); i++) cells.push(null);
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(todayY, todayM - 1, todayD + i);
+      const y = d.getFullYear();
+      const mo = d.getMonth() + 1;
+      const day = d.getDate();
+      const date = `${y}-${String(mo).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      cells.push({ day, date });
     }
     return cells;
-  }, [todayYear, todayMonth]);
+  }, [todayY, todayM, todayD]);
 
-  const monthLabel = new Date(todayYear, todayMonth - 1, 1).toLocaleDateString(
-    lang === 'es' ? 'es-US' : 'en-US',
-    { month: 'long', year: 'numeric' }
-  );
+  // Range header: "Jul 20 – Aug 18, 2026"
+  const locale = lang === 'es' ? 'es-US' : 'en-US';
+  const rangeStart = new Date(todayY, todayM - 1, todayD);
+  const rangeEnd   = new Date(todayY, todayM - 1, todayD + 29);
+  const monthLabel = `${rangeStart.toLocaleDateString(locale, { month: 'short', day: 'numeric' })} – ${rangeEnd.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' })}`;
 
   const selectedDay = useMemo(
     () => (selectedDate ? (dayMap.get(selectedDate) ?? null) : null),
@@ -278,9 +283,9 @@ export default function AppointmentSection({ lang }: Props) {
                       onClick={() =>
                         setSelectedDate(isSelected ? null : cell.date)
                       }
-                      className={`aspect-square rounded-lg border flex flex-col items-center justify-center transition-all ${cellCls}`}
+                      className={`aspect-square rounded-lg border flex flex-col items-center justify-center transition-all ${cellCls} ${isToday ? 'ring-2 ring-blue-400 ring-offset-1' : ''}`}
                     >
-                      <span className={`text-sm font-black leading-none ${isToday && !isSelected ? 'underline decoration-dotted' : ''}`}>
+                      <span className="text-sm font-black leading-none">
                         {cell.day}
                       </span>
                     </button>
