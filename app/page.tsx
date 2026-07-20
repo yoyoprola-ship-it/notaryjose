@@ -10,7 +10,7 @@ import CancelSection from './components/CancelSection';
 // ─── Copy bilingüe ─────────────────────────────────────────────
 
 interface CopyBlock {
-  nav: { services: string; book: string; cancel: string; language: string };
+  nav: { services: string; book: string; cancel: string; location: string; language: string };
   hero: {
     eyebrow: string;
     title: string;
@@ -27,7 +27,7 @@ interface CopyBlock {
 
 const COPY: { en: CopyBlock; es: CopyBlock } = {
   en: {
-    nav: { services: 'Services', book: 'Book', cancel: 'Cancel appt', language: 'ES' },
+    nav: { services: 'Services', book: 'Book', cancel: 'Cancel appt', location: 'Location', language: 'ES' },
     hero: {
       eyebrow: 'Bilingual notary public — Lafayette, Louisiana',
       title: 'Jose E. Garcia',
@@ -84,7 +84,7 @@ const COPY: { en: CopyBlock; es: CopyBlock } = {
     footer: 'Notary services in Lafayette, LA · English and Spanish',
   },
   es: {
-    nav: { services: 'Servicios', book: 'Reservar', cancel: 'Cancelar cita', language: 'EN' },
+    nav: { services: 'Servicios', book: 'Reservar', cancel: 'Cancelar cita', location: 'Ubicación', language: 'EN' },
     hero: {
       eyebrow: 'Notario público bilingüe — Lafayette, Luisiana',
       title: 'Jose E. Garcia',
@@ -200,6 +200,12 @@ function TopBar({
           >
             {t.nav.cancel}
           </a>
+          <a
+            href="#location"
+            className="hidden sm:inline text-sm text-slate-600 hover:text-slate-900"
+          >
+            {t.nav.location}
+          </a>
           <button
             onClick={onToggleLang}
             className="px-3 py-1 text-xs font-bold uppercase tracking-wider text-amber-800 border border-amber-300 hover:bg-amber-50 rounded"
@@ -288,7 +294,7 @@ function ServicesGrid({ t }: { t: CopyBlock }) {
 
 function LocationSection({ t }: { t: CopyBlock }) {
   return (
-    <section className="px-6 py-16 bg-white border-t border-stone-200">
+    <section id="location" className="px-6 py-16 bg-white border-t border-stone-200">
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
           <p className="text-xs font-bold uppercase tracking-[0.25em] text-amber-700 mb-2">—</p>
