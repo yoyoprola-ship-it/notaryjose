@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Timestamp } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { adminAuth, adminDb } from '@/app/lib/firebaseAdmin';
 
 function monthBounds(offset: 0 | -1) {
@@ -10,11 +10,29 @@ function monthBounds(offset: 0 | -1) {
   const end   = Timestamp.fromDate(new Date(y, m + 1, 1));
   const label = new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric' })
     .format(new Date(y, m, 1));
-  const startStr = `${y}-${String(m + 1).padStart(2, '0')}-01`;
+  const period   = `${y}-${String(m + 1).padStart(2, '0')}`;
+  const startStr = `${period}-01`;
   const endStr   = new Date(y, m + 1, 0).toISOString().slice(0, 10);
-  const dueD = new Date(y, m + 2, 5);
-  const dueDate = `${dueD.getFullYear()}-${String(dueD.getMonth() + 1).padStart(2, '0')}-05`;
-  return { start, end, label, startStr, endStr, dueDate };
+  const dueD     = new Date(y, m + 2, 5);
+  const dueDate  = `${dueD.getFullYear()}-${String(dueD.getMonth() + 1).padStart(2, '0')}-05`;
+  return { start, end, label, period, startStr, endStr, dueDate };
+}
+
+async function saveBill(period: string, label: string, bookings: number, minutes: number, dueDate: string) {
+  const bookingFee = parseFloat((bookings * 0.85).toFixed(2));
+  const minutesFee = parseFloat((minutes * 0.92).toFixed(2));
+  const total      = parseFloat((bookingFee + minutesFee).toFixed(2));
+  const ref  = adminDb.collection('notaryjose_bills').doc(period);
+  const snap = await ref.get();
+  if (snap.exists && snap.data()?.status === 'paid') return;
+  const existing = snap.data() ?? {};
+  await ref.set({
+    period, label, bookings, minutes, bookingFee, minutesFee, total, dueDate,
+    status:    existing.status    ?? 'pending',
+    paidAt:    existing.paidAt    ?? null,
+    createdAt: existing.createdAt ?? FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
+  });
 }
 
 async function countBetween(col: string, start: Timestamp, end: Timestamp): Promise<number> {
@@ -95,6 +113,11 @@ export async function GET(request: NextRequest) {
     getTwilioStats(cur.startStr,  cur.endStr),
     getTwilioStats(prev.startStr, prev.endStr),
   ]);
+
+  void Promise.all([
+    saveBill(cur.period,  cur.label,  bookingsCur,  twiliocur.minutes,  cur.dueDate),
+    saveBill(prev.period, prev.label, bookingsPrev, twilioprev.minutes, prev.dueDate),
+  ]).catch(() => {});
 
   return NextResponse.json({
     current:  { label: cur.label,  bookings: bookingsCur,  calls: twiliocur.calls,  consults: consultsCur,  minutes: twiliocur.minutes,  dueDate: cur.dueDate  },
