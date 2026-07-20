@@ -1,4 +1,6 @@
 import { NextRequest } from 'next/server';
+import { FieldValue } from 'firebase-admin/firestore';
+import { adminDb } from '@/app/lib/firebaseAdmin';
 import { validateTwilioSignature } from '@/app/lib/validateTwilio';
 
 const BASE = process.env.SITE_URL ?? 'https://notaryjose.lafayettelamarket.com';
@@ -19,6 +21,16 @@ export async function POST(request: NextRequest) {
   const url = `${BASE}/api/twilio/voice/welcome`;
   if (authToken && sig && !validateTwilioSignature(authToken, sig, url, params)) {
     return new Response('Forbidden', { status: 403 });
+  }
+
+  // Track unique calls — doc ID = CallSid deduplicates retries/redirects
+  const callSid = params.CallSid;
+  if (callSid) {
+    void adminDb.collection('notaryjose_calls').doc(callSid).create({
+      callerPhone: params.From ?? '',
+      callSid,
+      createdAt: FieldValue.serverTimestamp(),
+    }).catch(() => { /* already tracked on redirect */ });
   }
 
   return twiml(`
