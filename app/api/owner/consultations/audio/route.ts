@@ -2,8 +2,8 @@ import { NextRequest } from 'next/server';
 import { requireOwner } from '@/app/lib/ownerApiAuth';
 
 export async function GET(request: NextRequest) {
-  const authError = await requireOwner(request);
-  if (authError) return authError;
+  const auth = await requireOwner(request);
+  if (!auth.ok) return auth.response;
 
   const sid = request.nextUrl.searchParams.get('sid');
   if (!sid || !/^RE[a-f0-9]{32}$/.test(sid)) {

@@ -3,8 +3,8 @@ import { adminDb } from '@/app/lib/firebaseAdmin';
 import { requireOwner } from '@/app/lib/ownerApiAuth';
 
 export async function GET(request: NextRequest) {
-  const authError = await requireOwner(request);
-  if (authError) return authError;
+  const auth = await requireOwner(request);
+  if (!auth.ok) return auth.response;
 
   try {
     const snap = await adminDb
@@ -34,8 +34,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const authError = await requireOwner(request);
-  if (authError) return authError;
+  const auth = await requireOwner(request);
+  if (!auth.ok) return auth.response;
 
   let body: { id?: string; status?: string };
   try { body = await request.json(); } catch { return NextResponse.json({ error: 'Invalid body' }, { status: 400 }); }

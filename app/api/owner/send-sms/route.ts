@@ -4,8 +4,8 @@ import { sendSms } from '@/app/lib/twilioSms';
 import { getClientIp, rateLimitOr429 } from '@/app/lib/rateLimit';
 
 export async function POST(request: NextRequest) {
-  const authError = await requireOwner(request);
-  if (authError) return authError;
+  const auth = await requireOwner(request);
+  if (!auth.ok) return auth.response;
 
   const ip = getClientIp(request.headers);
   const rl = await rateLimitOr429(`nj-owner-send-sms:${ip}`, { maxRequests: 10, windowMs: 60_000 });
