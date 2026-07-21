@@ -141,7 +141,7 @@ function MonthCard({ m, accent }: { m: MonthStats; accent?: boolean }) {
 
 function BillingCard({ m, accent }: { m: MonthStats; accent?: boolean }) {
   const bookingFee = m.bookings * 0.85;
-  const minutesFee = m.minutes * 0.92;
+  const minutesFee = m.minutes * 0.59;
   const total = bookingFee + minutesFee;
   const due = new Date(m.dueDate + 'T12:00:00');
   const isPast = due < new Date();
@@ -157,7 +157,7 @@ function BillingCard({ m, accent }: { m: MonthStats; accent?: boolean }) {
           <span className="font-bold">${bookingFee.toFixed(2)}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-slate-600">{m.minutes} min × $0.92</span>
+          <span className="text-slate-600">{m.minutes} min × $0.59</span>
           <span className="font-bold">${minutesFee.toFixed(2)}</span>
         </div>
         <div className="border-t border-stone-200 pt-2 flex justify-between items-baseline">

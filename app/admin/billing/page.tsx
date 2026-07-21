@@ -68,7 +68,7 @@ export default function BillingPage() {
       <div className="mb-6">
         <h1 className="text-3xl font-black tracking-tight mb-1">Billing History</h1>
         <p className="text-sm text-slate-500">
-          All monthly invoices — $0.85/booking + $0.92/minute of inbound calls.
+          All monthly invoices — $0.85/booking + $0.59/minute of inbound calls.
         </p>
       </div>
 

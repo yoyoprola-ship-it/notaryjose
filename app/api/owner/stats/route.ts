@@ -21,7 +21,7 @@ function monthBounds(offset: 0 | -1) {
 
 async function saveBill(period: string, label: string, bookings: number, minutes: number, dueDate: string) {
   const bookingFee = parseFloat((bookings * 0.85).toFixed(2));
-  const minutesFee = parseFloat((minutes * 0.92).toFixed(2));
+  const minutesFee = parseFloat((minutes * 0.59).toFixed(2));
   const total      = parseFloat((bookingFee + minutesFee).toFixed(2));
   const ref  = adminDb.collection('notaryjose_bills').doc(period);
   const snap = await ref.get();
